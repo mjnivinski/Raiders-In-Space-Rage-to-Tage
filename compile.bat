@@ -1,0 +1,2 @@
+javac ris\*.java
+PAUSE
