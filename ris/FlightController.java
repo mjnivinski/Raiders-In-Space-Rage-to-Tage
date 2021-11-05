@@ -2,12 +2,11 @@ package ris;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.lang.Math;
 
 /*import ris.MyGame;
 //import a3.myGameEngine.DeadZones;
 //import a3.myGameEngine.SimpleMath;
-import net.java.games.input.Controller;
-import net.java.games.input.Event;
 import ray.input.InputManager;
 import ray.input.action.AbstractInputAction;
 import ray.physics.PhysicsEngine;
@@ -18,14 +17,16 @@ import ray.rage.scene.SceneNode;
 import ray.rml.Degreef;
 import ray.rml.Vector3;
 import ray.rml.Vector3f;*/
+//import net.java.games.input.Event;
+//import net.java.games.input.Controller;
+import net.java.games.input.*;
+import tage.input.action.AbstractInputAction;
 
 import tage.*;
 import tage.input.*;
-import tage.rml.*;
+import tage.rml.Vector3;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
-import tage.input.action.AbstractInputAction;
-import net.java.games.input.Event;
 import org.joml.*;
 
 //Controller
@@ -40,6 +41,7 @@ public class FlightController {
 	
 	//temporary for control test
 	//private SceneNode target;
+	private GameObject ship;
 	
 	ShipController shipController;
 	
@@ -73,38 +75,43 @@ public class FlightController {
 	
 	KeyboardFireWeapon KFW;
 	
-	Vector3 cameraOffset = Vector3f.createFrom(0, 0f, -1.7f);
+	//Vector3f cameraOffset = new Vector3f(0f,0f,-1.7f); TODO reinstate this as the offset
+	Vector3f cameraOffset = new Vector3f(0f,0f,-1.7f);
 	
 	float deltaTime;
 	
-	Vector3 basePosition;
+	Vector3f basePosition;
 	
 	//public FlightController(MyGame g, Camera c, SceneNode cN, SceneNode t, InputManager im, SceneManager sm, PhysicsEngine physics) throws IOException {
-	public FlightController(MyGame g, GameObject shipObj) throws IOException {
+	public FlightController(MyGame g) throws IOException {
 		game = g;
 		camera = game.getCamera();
 		eng = game.getEngine();
 		im = g.getInputManager();
-		target = t;//
+		ship = g.getPlayerShip();
+		physics = g.getPhysicsEngine();
+
+		
 		setupInput();
-		this.physics = physics;
 		
-		shipController = new ShipController(game, eng, this, target, game.getSceneGraph(), physics);
+		shipController = new ShipController(game, this);
 		
-		cameraN.setLocalPosition(cameraOffset);
+		//cameraN.setLocalPosition(cameraOffset);
 		
-		camera.setPo((Vector3f) cameraN.getWorldPosition());
+		//camera.setPo((Vector3f) cameraN.getWorldPosition());
 		
-		camera.setFd((Vector3f) cameraN.getWorldForwardAxis().normalize());
-		camera.setUp((Vector3f) cameraN.getWorldUpAxis().normalize());
-		Vector3f rV = (Vector3f) cameraN.getWorldRightAxis();
-		rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), rV.y(), rV.z());
-		camera.setRt((Vector3f) rV.normalize());
+		//camera.setFd((Vector3f) cameraN.getWorldForwardAxis().normalize());
+		//camera.setUp((Vector3f) cameraN.getWorldUpAxis().normalize());
+		//Vector3f rV = (Vector3f) cameraN.getWorldRightAxis();
+		//rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), rV.y(), rV.z());
+		//camera.setRt((Vector3f) rV.normalize());
 		
-		basePosition = cameraN.getLocalPosition();
+		basePosition = camera.getLocation();
+		
 	}
 	
 	private void setupInput() {
+		System.out.println("setupInput Flightcontroller");
 		String gamepadName = im.getFirstGamepadName();
 		
 		ArrayList<Controller> controllers = im.getControllers();
@@ -125,7 +132,9 @@ public class FlightController {
 	}
 	
 	private void setupGamepad(InputManager im, String controllerName) {
-		
+		System.out.println("setup gamepad: must have not been null");
+		System.out.println(controllerName);
+		System.out.println(im);
 		CT  = new ControllerThrottle();
 		CR = new ControllerRoll();
 		CY = new ControllerYaw();
@@ -232,15 +241,14 @@ public class FlightController {
 	
 	public void update() {
 		
-		
-		
-		deltaTime = eng.getElapsedTimeMillis()/1000;
-		//print("start");
+		deltaTime = game.getDeltaTime();
 		
 		//cameraLook();
 		shipController.update();
 		//cameraLook();
+
 		updateCamera();
+
 		//cameraLook();
 		
 		//print("finish");
@@ -341,7 +349,6 @@ public class FlightController {
 	private class RollLeft extends AbstractInputAction {
 		@Override
 		public void performAction(float arg0, Event e) {
-			//print("rollLeft");
 			shipController.setRollLeft(-1 * e.getValue());
 		//	ris.MyGame.throttleLeftAndBackAnimation();
 		}
@@ -403,8 +410,6 @@ public class FlightController {
 	}
 	
 	private class FireWeapon extends AbstractInputAction {
-		
-		
 		@Override
 		public void performAction(float arg0, Event e) {
 			if( e.getValue() < -0.1f) shipController.setFiring(true);
@@ -413,8 +418,6 @@ public class FlightController {
 	}
 	
 	private class KeyboardFireWeapon extends AbstractInputAction {
-		
-		
 		@Override
 		public void performAction(float arg0, Event e) {
 			//if(e.getValue())
@@ -429,19 +432,27 @@ public class FlightController {
 	
 	public void updateCamera() {
 		
-		camera.setFd((Vector3f) target.getWorldForwardAxis().normalize());
-		camera.setUp((Vector3f) target.getWorldUpAxis().normalize());
-		Vector3f rV = (Vector3f) target.getWorldRightAxis();
-		rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), -1 * rV.y(), -1 * rV.z());
-		camera.setRt((Vector3f) rV.normalize());
+		//setN forward
+		//setV up
+		//setU right
+		camera.setN((Vector3f) ship.getWorldForwardVector().normalize());
+		camera.setV((Vector3f) ship.getWorldUpVector().normalize());
+		camera.setU((Vector3f) ship.getWorldRightVector().normalize());
 		
-		cameraN.setLocalPosition(cameraN.getLocalPosition());
-		camera.setPo((Vector3f) cameraN.getWorldPosition());
+		//Vector3f rV = (Vector3f) ship.getWorldRightVector();
+		//rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), -1 * rV.y(), -1 * rV.z());
+		//rV = new Vector3f(-1 * rV.x(), -1 * rV.y(), -1 * rV.z());
+		//camera.setU((Vector3f) rV.normalize());
+		
+		camera.setLocation(ship.getWorldLocation().add(cameraOffset));
+		//camera.setPo((Vector3f) cameraN.getWorldPosition());
 		
 		//do not uncomment camera.setPo((Vector3f) target.getWorldPosition());
 		
-		cameraThrottleShift();
-		cameraTurnShift();
+		//TODO these methods shift the camera to the side or backward with the throttle
+		//honestly not that much of a priority
+		//cameraThrottleShift();
+		//cameraTurnShift();
 	}
 	
 	
@@ -449,15 +460,19 @@ public class FlightController {
 		
 		float throttleDampen = 0.025f;
 		
-		Vector3 forward = camera.getFd();
+		//Get forward Vector
+		Vector3f forward = camera.getN();
 		
-		forward = forward.mult(1 + (shipController.getThrottle() * throttleDampen));
+		//forward = forward.mult(1 + (shipController.getThrottle() * throttleDampen));
+		forward = forward.mul(1 + (shipController.getThrottle() * throttleDampen));
 		
-		camera.setFd((Vector3f) forward);
+		camera.setN((Vector3f) forward);
 	}
 	
 	private void cameraTurnShift() {
-		
+
+		//TODO move camera around in cockpit, probably do it later
+		/*
 		float rollRatio = 0.03f;
 		float pitchRatio = 0.04f;
 		float yawRatio = 0.025f;
@@ -482,22 +497,13 @@ public class FlightController {
 		
 		//Add all the vectors together
 		cameraN.setLocalPosition(basePosition.add(rollVector).add(pitchVector).add(yawVector));
+		*/
 	}
 	
 	public int getThrottleSign() {
 		return shipController.getThrottleSign();
 	}
-	
-	/*
-	public int getThrottleSign() {
-		float throttle = shipController.getThrottle();
-		int sign = 0;
-		if(throttle > 0) sign = 1;
-		else if(throttle < 0) sign = -1;
-		
-		return sign;
-	}
-	*/
+
 	public int getPitchSign() {
 		float pitch = shipController.getThrottle();
 		int sign = 0;

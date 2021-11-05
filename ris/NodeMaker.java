@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import tage.*;
 
+import tage.rml.Vector3;
+import tage.rml.Degreef;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 
@@ -14,8 +16,6 @@ import java.lang.Math;
 import java.awt.*;
 
 import java.awt.event.*;
-import tage.rml.Degreef;
-import tage.rml.Vector3;
 
 import java.io.*;
 import javax.swing.*;
@@ -24,17 +24,19 @@ import org.joml.*;
 
 public class NodeMaker {
 
+	private MyGame game;
 	private SceneGraph sg;
 	private Engine eng;
 	private PhysicsEngine physics;
 	private GameObject ship;
 
-	private ObjShape laserS, throttleS, scoreS;
-	private TextureImage laserT, throttleT, scoreT;
+	private ObjShape laserS, throttleS, scoreS, npcS;
+	private TextureImage laserT, throttleT, scoreT, npcT;
 
 	private float vals[] = new float[16];
 	
 	public NodeMaker(MyGame g) {
+		game = g;
 		sg = g.getSceneGraph();
 		eng = g.getEngine();
 		this.physics = g.getPhysicsEngine();
@@ -43,15 +45,33 @@ public class NodeMaker {
 	}
 
 	private void loadShapesAndTextures(){
-		System.out.println("loadShapesAndTextures");
-		laserS = new ImportedModel("otherLaser.obj");
-		laserT = new TextureImage("laserBolt.png");
+		System.out.println("Load Shapes and Textures for Nodemaker");
+		
+		//I had game create all of these getters because I thought that you couldn't load assets outside of a specific method
+		//but now that I have written the getters, I wonder if this methodology is better to track all of the assets in the game
+		//should all of the asset loads be in one spot,
+		//should all of the asset loads only exist in their relative positions.
+		//project is too small to worry, something larger might have a necessity on either strategy.
 
-		throttleS = new ImportedModel("throttleIndicator.obj");
-		throttleT = new TextureImage("throttleIndicator.png");
-
-		scoreS = new ImportedModel("scoreIndicator.obj");
-		scoreT = new TextureImage("scoreIndicator.png");
+		//laserS = new ImportedModel("otherLaser.obj");
+		laserS = game.getLaserShape();
+		//laserT = new TextureImage("laserBolt.png");
+		laserT = game.getLaserTexture();
+		
+		//throttleS = new ImportedModel("throttleIndicator.obj");
+		throttleS = game.getThrottleShape();
+		//throttleT = new TextureImage("throttleIndicator.png");
+		throttleT = game.getThrottleTexture();
+		
+		//scoreS = new ImportedModel("scoreIndicator.obj");
+		scoreS = game.getScoreShape();
+		//scoreT = new TextureImage("scoreIndicator.png");
+		scoreT = game.getScoreTexture();
+		
+		//npcS = new ImportedModel("DropShipVer4.obj");
+		npcS = game.getNPCShape();
+		//npcT = new TextureImage("DropShipVer4.png");
+		npcT = game.getNPCTexture();
 	}
 	
 	public GameObject[] makeLasers() throws IOException {
@@ -101,7 +121,6 @@ public class NodeMaker {
 		laser.setLocalScale((new Matrix4f()).scaling(scale));
 		
 		float mass = 1.0f;
-		//float up[] = {0,1,0};
 		double[] tempTransform;
 		
 		Matrix4f translation  = new Matrix4f(laser.getLocalTranslation());
@@ -137,21 +156,9 @@ public class NodeMaker {
 	private GameObject makeThrottleIndicator(String name) throws IOException {
 		
 		GameObject throttle = new GameObject(GameObject.root(), throttleS, throttleT);
-
-		//GameObject laser = new GameObject(GameObject.root(), laserS, laserT);
-		
-		//Entity tie = sm.createEntity(name, "throttleIndicator.obj");
-		//tie.setPrimitive(Primitive.TRIANGLES);
-		
-		//ti.attachObject(tie);
 		
 		float scale = 0.08f;
-
 		throttle.setLocalScale((new Matrix4f()).scaling(scale));
-		
-		//throttleIndicator.setLocalScale(Vector3f.createFrom(scale,scale,scale));
-		
-		//ship.attachChild(throttleIndicator);
 		throttle.setParent(ship);
 		
 		//TODO pitch the throttle
@@ -178,43 +185,40 @@ public class NodeMaker {
 	
 	private GameObject makeScoreIndicator(String name) throws IOException {
 		
-		GameObject ti = sm.getRootSceneNode().createChildSceneNode(name);
-		
-		Entity tie = sm.createEntity(name, "scoreIndicator.obj");
-		tie.setPrimitive(Primitive.TRIANGLES);
-		
-		ti.attachObject(tie);
-		
+		GameObject score = new GameObject(ship, scoreS, scoreT);
+
 		float scale = 0.06f;
-		
-		ti.setLocalScale(Vector3f.createFrom(scale,scale,scale));
-		
-		ship.attachChild(ti);
-		
+		score.setLocalScale((new Matrix4f()).scaling(scale));
+		//score.setParent(ship);
+
 		//TODO figure out the rotation for the throttle indicators, or any thing for that matter.
 		//ti.pitch(Degreef.createFrom(270));
 		
-		return ti;
+		return score;
 	}
 	
 	public GameObject makeNPC(String name, Vector3 position) throws IOException {
-		GameObject npc = sm.getRootSceneNode().createChildSceneNode(name);
+
+		GameObject npc = new GameObject(GameObject.root(), npcS, npcT);
+
+		//GameObject npc = sm.getRootSceneNode().createChildSceneNode(name);
 		
-		Entity e = sm.createEntity(name + "i", "DropShipVer4.obj");
-		e.setPrimitive(Primitive.TRIANGLES);
+		npc.setLocalLocation(new Vector3f(position.x(), position.y(), position.z()));
+
+		//npc.setLocalPosition
 		
-		npc.attachObject(e);
-		
-		npc.setLocalPosition(position);
-		
-		float mass = 1.0f;
+		//float mass = 1.0f;
 		//float up[] = {0,1,0};
-		double[] temptf;
+		//double[] temptf;
+
+		float mass = 1.0f;
+		double[] tempTransform;
 		
-		temptf = MyGame.toDoubleArray(npc.getLocalTransform().toFloatArray());
-		PhysicsObject shipPhysicsObject = physics.addSphereObject(physics.nextUID(), mass, temptf, 1.0f);
-		shipPhysicsObject.setDamping(0, 0);
-		npc.setPhysicsObject(shipPhysicsObject);
+		Matrix4f translation  = new Matrix4f(npc.getLocalTranslation());
+		tempTransform = MyGame.toDoubleArray(translation.get(vals));
+		PhysicsObject npcPhysicsObject = physics.addSphereObject(physics.nextUID(), mass, tempTransform, 1.0f);
+		npcPhysicsObject.setDamping(0, 0);
+		npc.setPhysicsObject(npcPhysicsObject);
 		
 		return npc;
 	}

@@ -164,8 +164,8 @@ public class MyGame extends VariableFrameRateGame {
 
 	private PhysicsObject shipPhysObj;
 
-	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS;
-	private TextureImage stuff, things, cockpitBlueT, blueShipT;
+	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS, laserS, throttleS, scoreS, npcS;
+	private TextureImage stuff, things, cockpitBlueT, blueShipT, laserT, throttleT, scoreT, npcT;
 	private Light ambientLight, light1, light2;
 	private NodeController rc, sc;
 	private int spaceBox; // skybox
@@ -173,6 +173,7 @@ public class MyGame extends VariableFrameRateGame {
 
 	private float vals[] = new float[16];
 
+	private float deltaTime, previousTime;
 
 	public MyGame(){ super(); }
 
@@ -209,18 +210,28 @@ public class MyGame extends VariableFrameRateGame {
 	public void loadShapes(){
 		blueShipS = new ImportedModel("blueGhost.obj");
 		cockpitBlueS = new ImportedModel("blueCockpit.obj");
+		laserS = new ImportedModel("otherLaser.obj");
+		throttleS = new ImportedModel("throttleIndicator.obj");
+		scoreS = new ImportedModel("scoreIndicator.obj");
+		npcS = new ImportedModel("DropShipVer4.obj");
+
 	}
 
 	public void loadTextures(){
 		blueShipT = new TextureImage("blueGhost.png");
 		cockpitBlueT = new TextureImage("blueCockpit.png");
+		laserT = new TextureImage("laserBolt.png");
+		throttleT = new TextureImage("throttleIndicator.png");
+		scoreT = new TextureImage("scoreIndicator.png");
+		npcT = new TextureImage("DropShipVer4.png");
+
 	}
 
 	public void buildObjects(){
 		Matrix4f initialTranslation, initialRotation, initialScale;
 
-		//blueShipO = new GameObject(GameObject.root(), blueShipS, blueShipT);
-		shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
+		//shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
+		shipObj = new GameObject(GameObject.root(), cockpitBlueS);
 
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(1f);
@@ -231,16 +242,23 @@ public class MyGame extends VariableFrameRateGame {
 		shipObj.setLocalScale(initialScale);
 	}
 
-	public void initializeGame(){
+	public void initializeGame() {
+		print("initializeGame");
 		Light.setGlobalAmbient(0.5f,0.5f,0.5f);
 		light1 = new Light();
 		light1.setLocation(new Vector3f(0,10f,0));
 		(engine.getSceneGraph()).addLight(light1);
 
 		Vector3f position = new Vector3f(0,0,0);
-		
-		setupCamera();
-		setupPhysics();
+		try {
+			setupCamera();
+			setupPhysics();
+			setupInputs();
+		} catch (Exception e) {
+			print("Unable to setup game");
+			System.exit(0);
+		}
+		print("done initializingGame");
 	}
 	
 	//TODO confirm skybox loaded properly (look around)
@@ -263,7 +281,8 @@ public class MyGame extends VariableFrameRateGame {
 	//TODO setup physics
 	private void setupPhysics() {
 		print("setupPhysics()");
-		String engine = "tage.physics.JBullet.JbulletPhysicsEngine";
+		String engine = "tage.physics.JBullet.JBulletPhysicsEngine";
+		print("done initializing engine");
 		float[] gravity = {0f,0f,0f};
 
 		physicsEngine = PhysicsEngineFactory.createPhysicsEngine(engine);
@@ -274,7 +293,7 @@ public class MyGame extends VariableFrameRateGame {
 		float up[] = {0,1,0};
 		double[] tempTransform;
 
-		Matrix4f translation  = new Matrix4f(shipObj.getlocalTranslation());
+		Matrix4f translation  = new Matrix4f(shipObj.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		shipPhysObj = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 1.0f);
 		shipObj.setPhysicsObject(shipPhysObj);
@@ -285,7 +304,7 @@ public class MyGame extends VariableFrameRateGame {
 	protected void setupInputs() throws IOException {
 		//im = new GenericInputManager();
 		im = new InputManager();
-		playerController = new FlightController(this, shipObj);
+		playerController = new FlightController(this);
 		
 		//setupAdditionalTestControls(im);
 		
@@ -293,7 +312,15 @@ public class MyGame extends VariableFrameRateGame {
 	}
 
 	public void update() {
-		//System.out.println("its update");
+		updateDeltaTime();
+		playerController.update();
+		im.update(deltaTime);
+
+		
+		//Matrix4f rotate;
+		//rotate = shipObj.getLocalRotation();
+		//rotate.rotateY(0.05f);
+		//shipObj.setLocalRotation(rotate);
 	}
 
 
@@ -1544,8 +1571,16 @@ public class MyGame extends VariableFrameRateGame {
 	public PhysicsEngine getPhysicsEngine() { return physicsEng; }
 	public NodeMaker getNodeMaker() { return nm; }
 	public SceneNode getShip() { return shipN; }
-
 	*/
+
+	long elapsedTime;
+	long prevTime;
+	long diffTime;
+	private void updateDeltaTime(){
+		diffTime = System.currentTimeMillis() - prevTime;
+		prevTime = System.currentTimeMillis();
+		deltaTime = (float)diffTime/1000;
+	}
 
 	private float[] toFloatArray(double[] arr)
 	{ 
@@ -1571,12 +1606,19 @@ public class MyGame extends VariableFrameRateGame {
 		return ret;
 	}
 
+	public float getDeltaTime() { return deltaTime; }
 	public Camera getCamera(){ return (engine.getRenderSystem().getViewport("MAIN").getCamera()); }
 	public Engine getEngine() { return engine; }
 	public PhysicsEngine getPhysicsEngine() { return physicsEngine; }
 	public InputManager getInputManager() { return im; }
 	public SceneGraph getSceneGraph() { return engine.getSceneGraph(); }
-
 	public GameObject getPlayerShip() { return shipObj; }
+	public ObjShape getLaserShape() { return laserS; }
+	public ObjShape getThrottleShape() { return laserS; }
+	public ObjShape getScoreShape() { return laserS; }
+	public ObjShape getNPCShape() { return laserS; }
+	public TextureImage getLaserTexture() { return laserT; }
+	public TextureImage getThrottleTexture() { return laserT; }
+	public TextureImage getScoreTexture() { return laserT; }
+	public TextureImage getNPCTexture() { return laserT; }
 }
-
