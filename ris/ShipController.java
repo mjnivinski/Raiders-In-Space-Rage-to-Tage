@@ -305,7 +305,7 @@ public class ShipController {
 		pitch = SimpleMath.lerp(pitch, value, pitchAccel * deltaTime);
 		
 		//TODO handle ship pitch
-		//ship.pitch(Degreef.createFrom(pitchRate * pitch * deltaTime));
+		ship.pitch(pitchRate * pitch * deltaTime);
 	}
 	
 	private void roll() {
@@ -317,7 +317,7 @@ public class ShipController {
 		roll = SimpleMath.lerp(roll, value, rollAccel * deltaTime);
 		
 		//TODO ROLL
-		//ship.roll(Degreef.createFrom(rollRate * roll * deltaTime));
+		ship.roll(rollRate * roll * deltaTime);
 	}
 	
 	private void yaw() {
@@ -330,14 +330,7 @@ public class ShipController {
 		
 		yaw = SimpleMath.lerp(yaw, value, yawAccel * deltaTime);
 
-		//TODO YAW
-		//ship.yaw(Degreef.createFrom(yawRate * yaw * deltaTime));
-		Matrix4f rotate;
-		rotate = ship.getLocalRotation();
-		rotate.rotateY(yawRate * yaw * deltaTime);
-		System.out.println("yawRate: " + yawRate + " yaw: " + yaw + " deltaTime: " + deltaTime);
-		System.out.println("product " + (yawRate * yaw * deltaTime));
-		ship.setLocalRotation(rotate);
+		ship.yaw(yawRate * yaw * deltaTime);
 	}
 	
 	private void throttle() {
