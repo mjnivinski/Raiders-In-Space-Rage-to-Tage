@@ -245,20 +245,9 @@ public class FlightController {
 	//}
 	
 	public void update() {
-		
 		deltaTime = game.getDeltaTime();
-		
-		//cameraLook();
-		//cameraLook();
-		
 		shipController.update();
 		updateCamera();
-
-		//cameraLook();
-
-		//System.out.println(shipSeat.getWorldLocation());
-		
-		//print("finish");
 	}
 	
 	/*****************************************************************

@@ -229,8 +229,9 @@ public class MyGame extends VariableFrameRateGame {
 	public void buildObjects(){
 		Matrix4f initialTranslation, initialRotation, initialScale;
 
-		//shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
-		shipObj = new GameObject(GameObject.root(), cockpitBlueS);
+		shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
+		//shipObj = new GameObject(GameObject.root(), cockpitBlueS);
+		//shipObj = new GameObject(GameObject.root());
 		//shipObj = new GameObject(GameObject.root(), null, cockpitBlueT);
 
 		new GameObject(GameObject.root(), blueShipS, blueShipT);
@@ -311,9 +312,9 @@ public class MyGame extends VariableFrameRateGame {
 
 	public void update() {
 		updateDeltaTime();
-		playerController.update();
 		im.update(deltaTime);
 		physicsUpdate();
+		playerController.update();
 	}
 
 	/*
