@@ -24,7 +24,7 @@ import tage.input.action.AbstractInputAction;
 
 import tage.*;
 import tage.input.*;
-import tage.rml.Vector3;
+//import tage.rml.Vector3;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 import org.joml.*;
@@ -42,6 +42,7 @@ public class FlightController {
 	//temporary for control test
 	//private SceneNode target;
 	private GameObject ship;
+	private GameObject shipSeat;
 	
 	ShipController shipController;
 	
@@ -91,11 +92,18 @@ public class FlightController {
 		ship = g.getPlayerShip();
 		physics = g.getPhysicsEngine();
 
-		
 		setupInput();
 		
 		shipController = new ShipController(game, this);
+
+		shipSeat = new GameObject(ship);
+
+		//System.out.println(shipSeat.getWorldLocation());
 		
+		shipSeat.setLocalLocation(cameraOffset);
+		shipSeat.applyParentRotationToPosition(true);
+		
+		//System.out.println(shipSeat.getWorldLocation());
 		//cameraN.setLocalPosition(cameraOffset);
 		
 		//camera.setPo((Vector3f) cameraN.getWorldPosition());
@@ -132,9 +140,6 @@ public class FlightController {
 	}
 	
 	private void setupGamepad(InputManager im, String controllerName) {
-		System.out.println("setup gamepad: must have not been null");
-		System.out.println(controllerName);
-		System.out.println(im);
 		CT  = new ControllerThrottle();
 		CR = new ControllerRoll();
 		CY = new ControllerYaw();
@@ -244,12 +249,14 @@ public class FlightController {
 		deltaTime = game.getDeltaTime();
 		
 		//cameraLook();
-		shipController.update();
 		//cameraLook();
-
+		
+		shipController.update();
 		updateCamera();
 
 		//cameraLook();
+
+		//System.out.println(shipSeat.getWorldLocation());
 		
 		//print("finish");
 	}
@@ -435,16 +442,20 @@ public class FlightController {
 		//setN forward
 		//setV up
 		//setU right
-		camera.setN((Vector3f) ship.getWorldForwardVector().normalize());
-		camera.setV((Vector3f) ship.getWorldUpVector().normalize());
-		camera.setU((Vector3f) ship.getWorldRightVector().normalize());
+		camera.setN((Vector3f) shipSeat.getWorldForwardVector().normalize());
+		camera.setV((Vector3f) shipSeat.getWorldUpVector().normalize());
+		camera.setU((Vector3f) shipSeat.getWorldRightVector().normalize());
 		
 		//Vector3f rV = (Vector3f) ship.getWorldRightVector();
 		//rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), -1 * rV.y(), -1 * rV.z());
 		//rV = new Vector3f(-1 * rV.x(), -1 * rV.y(), -1 * rV.z());
 		//camera.setU((Vector3f) rV.normalize());
 		
-		camera.setLocation(ship.getWorldLocation().add(cameraOffset));
+		shipSeat.setLocalLocation(shipSeat.getLocalLocation());
+
+		//camera.setLocation(shipSeat.getWorldLocation().add(cameraOffset));
+		//camera.setLocation(shipSeat.getWorldLocation());
+		camera.setLocation(shipSeat.getWorldLocation());
 		//camera.setPo((Vector3f) cameraN.getWorldPosition());
 		
 		//do not uncomment camera.setPo((Vector3f) target.getWorldPosition());

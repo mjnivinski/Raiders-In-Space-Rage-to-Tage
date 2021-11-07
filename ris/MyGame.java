@@ -224,7 +224,6 @@ public class MyGame extends VariableFrameRateGame {
 		throttleT = new TextureImage("throttleIndicator.png");
 		scoreT = new TextureImage("scoreIndicator.png");
 		npcT = new TextureImage("DropShipVer4.png");
-
 	}
 
 	public void buildObjects(){
@@ -232,6 +231,9 @@ public class MyGame extends VariableFrameRateGame {
 
 		//shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
 		shipObj = new GameObject(GameObject.root(), cockpitBlueS);
+		//shipObj = new GameObject(GameObject.root(), null, cockpitBlueT);
+
+		new GameObject(GameObject.root(), blueShipS, blueShipT);
 
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(1f);
@@ -271,10 +273,6 @@ public class MyGame extends VariableFrameRateGame {
 	
 	//TODO setup cameras
 	protected void setupCamera() {
-		print("setupCamera");
-
-		//little less work than before
-		//the camera is already loaded in.
 		getCamera().setLocation(new Vector3f(0f,0f,25f));
 	}
 
@@ -283,7 +281,7 @@ public class MyGame extends VariableFrameRateGame {
 		print("setupPhysics()");
 		String engine = "tage.physics.JBullet.JBulletPhysicsEngine";
 		print("done initializing engine");
-		float[] gravity = {0f,0f,0f};
+		float[] gravity = {0f,1f,0f};
 
 		physicsEngine = PhysicsEngineFactory.createPhysicsEngine(engine);
 		physicsEngine.initSystem();
@@ -315,15 +313,8 @@ public class MyGame extends VariableFrameRateGame {
 		updateDeltaTime();
 		playerController.update();
 		im.update(deltaTime);
-
-		
-		//Matrix4f rotate;
-		//rotate = shipObj.getLocalRotation();
-		//rotate.rotateY(0.05f);
-		//shipObj.setLocalRotation(rotate);
+		physicsUpdate();
 	}
-
-
 
 	/*
 
@@ -1223,8 +1214,6 @@ public class MyGame extends VariableFrameRateGame {
 	*/
 
 	/*
-	
-	
 	float networkTimer = 0;
 	float tickRate = 100;
 	protected void processNetworking(float deltaTime) {
@@ -1580,6 +1569,23 @@ public class MyGame extends VariableFrameRateGame {
 		diffTime = System.currentTimeMillis() - prevTime;
 		prevTime = System.currentTimeMillis();
 		deltaTime = (float)diffTime/1000;
+	}
+
+	private void physicsUpdate(){
+		//print("shit");
+		Matrix4f mat = new Matrix4f();
+		Matrix4f mat2 = new Matrix4f().identity();
+		//checkForCollisions();
+		physicsEngine.update((float)diffTime);
+		for (GameObject go:engine.getSceneGraph().getGameObjects())
+		{
+			if (go.getPhysicsObject() != null)
+			{
+				mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+				mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
+				go.setLocalTranslation(mat2);
+			}
+		}
 	}
 
 	private float[] toFloatArray(double[] arr)

@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import tage.*;
 
-import tage.rml.Vector3;
-import tage.rml.Degreef;
+//import tage.rml.Vector3;
+//import tage.rml.Degreef;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 
@@ -20,7 +20,6 @@ import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
 import org.joml.*;
-
 
 public class NodeMaker {
 
@@ -134,7 +133,7 @@ public class NodeMaker {
 		return laser;
 	}
 	
-	private Vector3 throttleOffset;
+	private Vector3f throttleOffset;
 	private float throttleGap = 0.07f;
 	public GameObject[] makeThrottleIndicators() throws IOException {
 		GameObject[] theHud = new GameObject[10];
@@ -197,7 +196,7 @@ public class NodeMaker {
 		return score;
 	}
 	
-	public GameObject makeNPC(String name, Vector3 position) throws IOException {
+	public GameObject makeNPC(String name, Vector3f position) throws IOException {
 
 		GameObject npc = new GameObject(GameObject.root(), npcS, npcT);
 

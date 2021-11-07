@@ -16,7 +16,7 @@ import ris.MyGame;*/
 
 import tage.*;
 
-import tage.rml.Vector3;
+//import tage.rml.Vector3;
 
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
@@ -250,10 +250,12 @@ public class ShipController {
 	}
 	
 	private void updatePosition() {
-		
+		//System.out.println(ship.getWorldLocation());
 		//Vector3 direction = ship.getWorldForwardAxis();
 		Vector3f direction = ship.getWorldForwardVector();
 		direction = direction.mul(shipSpeed * throttle);
+
+		//System.out.println("shipSpeed: " + shipSpeed + " throttle: " + throttle);
 		
 		float[] velocities = new float[] {direction.x(),direction.y(),direction.z()};
 		shipPhys.setLinearVelocity(velocities);
