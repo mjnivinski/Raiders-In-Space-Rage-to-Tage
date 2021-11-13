@@ -76,7 +76,6 @@ public class FlightController {
 	
 	KeyboardFireWeapon KFW;
 	
-	//Vector3f cameraOffset = new Vector3f(0f,0f,-1.7f); TODO reinstate this as the offset
 	Vector3f cameraOffset = new Vector3f(0f,0f,-1.7f);
 	
 	float deltaTime;
@@ -85,37 +84,25 @@ public class FlightController {
 	
 	//public FlightController(MyGame g, Camera c, SceneNode cN, SceneNode t, InputManager im, SceneManager sm, PhysicsEngine physics) throws IOException {
 	public FlightController(MyGame g) throws IOException {
+		System.out.println("Flight Controller");
 		game = g;
 		camera = game.getCamera();
 		eng = game.getEngine();
 		im = g.getInputManager();
 		ship = g.getPlayerShip();
 		physics = g.getPhysicsEngine();
-
+		
 		setupInput();
 		
 		shipController = new ShipController(game, this);
-
+		
 		shipSeat = new GameObject(ship);
-
-		//System.out.println(shipSeat.getWorldLocation());
+		
 		
 		shipSeat.setLocalLocation(cameraOffset);
 		shipSeat.applyParentRotationToPosition(true);
 		
-		//System.out.println(shipSeat.getWorldLocation());
-		//cameraN.setLocalPosition(cameraOffset);
-		
-		//camera.setPo((Vector3f) cameraN.getWorldPosition());
-		
-		//camera.setFd((Vector3f) cameraN.getWorldForwardAxis().normalize());
-		//camera.setUp((Vector3f) cameraN.getWorldUpAxis().normalize());
-		//Vector3f rV = (Vector3f) cameraN.getWorldRightAxis();
-		//rV = (Vector3f) Vector3f.createFrom(-1 * rV.x(), rV.y(), rV.z());
-		//camera.setRt((Vector3f) rV.normalize());
-		
-		basePosition = camera.getLocation();
-		
+		basePosition = shipSeat.getLocalLocation();
 	}
 	
 	private void setupInput() {
@@ -458,6 +445,8 @@ public class FlightController {
 	
 	private void cameraThrottleShift() {
 		
+		//TODO camera focuses forward and backward based on the amount of throttle
+
 		float throttleDampen = 0.025f;
 		
 		//Get forward Vector

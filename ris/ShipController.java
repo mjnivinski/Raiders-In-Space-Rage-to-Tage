@@ -91,7 +91,7 @@ public class ShipController {
 	NodeMaker nm;
 	
 	public ShipController(MyGame g, FlightController f) throws IOException {
-		
+		System.out.println("Ship Controller");
 		setupJavascript();
 		
 		game = g;
@@ -101,7 +101,7 @@ public class ShipController {
 		FC = f;
 		ship = game.getPlayerShip();
 		
-		nm = new NodeMaker(g);
+		nm = game.getNodeMaker();
 		
 		lasers = nm.makeLasers();		
 		
@@ -114,28 +114,26 @@ public class ShipController {
 	private GameObject throttleBase;
 	private Vector3f[] throttlePositions;
 	private void setupThrottleIndicator() throws IOException {
-		//TODO need a fix for throttleBase
 
-		//throttleBase = sm.getRootSceneNode().createChildSceneNode("throttleBase");
-		throttleBase = new GameObject(GameObject.root(), game.getLaserShape(), game.getLaserTexture());
+		//TODO maybe fix the models
+
+		throttleBase = new GameObject(GameObject.root());
+		throttleBase.applyParentRotationToPosition(true);
 		
 		throttleIndicator = nm.makeThrottleIndicators();
 		
 		throttlePositions = new Vector3f[throttleIndicator.length];
 		
-		//ship.attachChild(throttleBase);
 		throttleBase.setParent(ship);
 		
 		throttleBase.setLocalLocation(throttleIndicator[4].getWorldLocation());
 		
-		//TODO throttle rotations
-		//throttleBase.roll(Degreef.createFrom(90));
-		//throttleBase.yaw(Degreef.createFrom(-55));
-		//throttleBase.roll(Degreef.createFrom(180));
+		throttleBase.roll(90);
+		throttleBase.yaw(-55);
+		throttleBase.roll(180);
 		
 		Vector3f position = new Vector3f(0.4f,-0.7f,0.5f);
 		
-		//Vector3 position = throttleBase.getLocalPosition().add(-0.5f,0,0);
 		throttleBase.setLocalLocation(position);
 		
 		print("throttleBase.getLocalLocation(): " + throttleBase.getLocalLocation());
@@ -146,7 +144,7 @@ public class ShipController {
 			//throttleBase.attachChild(throttleIndicator[i]);
 			throttleIndicator[i].setParent(throttleBase);
 		}
-		throttleBase.setLocalLocation(throttleBase.getLocalLocation().add(new Vector3f(1000f,1000f,1000f)));
+		//throttleBase.setLocalLocation(throttleBase.getLocalLocation().add(new Vector3f(1000f,1000f,1000f)));
 		
 	}
 	
@@ -253,6 +251,7 @@ public class ShipController {
 		//System.out.println(ship.getWorldLocation());
 		//Vector3 direction = ship.getWorldForwardAxis();
 		Vector3f direction = ship.getWorldForwardVector();
+		//System.out.println(direction + " throttle " + throttle);
 		direction = direction.mul(shipSpeed * throttle);
 
 		//System.out.println("shipSpeed: " + shipSpeed + " throttle: " + throttle);
@@ -260,7 +259,7 @@ public class ShipController {
 		float[] velocities = new float[] {direction.x(),direction.y(),direction.z()};
 		shipPhys.setLinearVelocity(velocities);
 		
-		//TODO what is this?
+		//TODO what is this? ground stuff??
 		/*
 		SceneNode tessN =
 				eng.getSceneManager().
@@ -274,7 +273,7 @@ public class ShipController {
 	//float heightDifference;
 	public void updateVerticalPosition()
 	{ 
-		//TODO what is this?
+		//TODO what is this? ground stuff?
 		//get Tesselation and the vertical height at the ships X,Z position
 		/*
 		SceneNode tessN = eng.getSceneManager().getSceneNode("TessN");
@@ -299,39 +298,23 @@ public class ShipController {
 	}
 	
 	private void pitch() {
-		
 		float value = keyVsGamepad(pitchForward, pitchBackward, controllerPitch);
-		
 		value = SimpleMath.parabolicSmooth(value);
-		
 		pitch = SimpleMath.lerp(pitch, value, pitchAccel * deltaTime);
-		
-		//TODO handle ship pitch
 		ship.pitch(pitchRate * pitch * deltaTime);
 	}
 	
 	private void roll() {
-		
 		float value = keyVsGamepad(rollLeft, rollRight, controllerRoll);
-		
 		value = SimpleMath.parabolicSmooth(value);
-		
 		roll = SimpleMath.lerp(roll, value, rollAccel * deltaTime);
-		
-		//TODO ROLL
 		ship.roll(rollRate * roll * deltaTime);
 	}
 	
 	private void yaw() {
-		
-
 		float value = keyVsGamepad(yawLeft, yawRight, controllerYaw);
-		//System.out.println("yawLeft: " + yawLeft + " " + " yawRight: " + yawRight + " controllerYaw: " + controllerYaw);
-		
 		value = SimpleMath.parabolicSmooth(value);
-		
 		yaw = SimpleMath.lerp(yaw, value, yawAccel * deltaTime);
-
 		ship.yaw(yawRate * yaw * deltaTime);
 	}
 	
@@ -339,11 +322,13 @@ public class ShipController {
 		
 		float value = keyVsGamepad(throttleUp, throttleDown, controllerThrottle);
 		
+		//System.out.println("throttle: " + throttle + "throttleAccel: " + throttleAccel + " value: " + value + " deltaTime: " + deltaTime);
 		throttle+= throttleAccel * value * deltaTime;
 		
 		if(throttle > 1) throttle = 1;
-		//if(throttle < 0) throttle = 0;
-		if(throttle < 0.01f) throttle = 0.01f;
+		if(throttle < 0.01f) throttle = 0.001f;
+		//TODO completely unecessary thing to investigate, why does the ship move if it gets set to 0?
+		//if(throttle < 0f) throttle = 0f;
 	}
 	
 	private float keyVsGamepad(float keyPos, float keyNeg, float controllerValue) {
@@ -379,10 +364,6 @@ public class ShipController {
 		timeSinceLastShot = 0;
 		
 		PhysicsObject p1 = lasers[shootCycle].getPhysicsObject();
-		
-		
-		
-		
 		PhysicsObject p2 = lasers[shootCycle+1].getPhysicsObject();
 		
 		Vector3f up = ship.getWorldUpVector();
@@ -401,40 +382,12 @@ public class ShipController {
 		d2[13] = position.y() - right.y();
 		d2[14] = position.z() - right.z();
 		
-		
 		p1.setTransform(d1);
 		p2.setTransform(d2);
 		
-		
-		
-		//how to move a physics object
-		
-		/*
-		Vector3 newPosition = Vector3f.createFrom(x,y,z);
-		 
-		double[] d1 = p1.getTransform();
-		
-		d1[12] = newPosition.x();
-		d1[13] = newPosition.y();
-		d1[14] = newPosition.z();
-		
-		p1.setTransform(d1);
-		*/
-		
-		
-		//System.out.println("shootCycle:" + shootCycle);
-		
-		//System.out.println("before: " + lasers[shootCycle].getWorldForwardAxis());
-		
-		//lasers[shootCycle].lookAt(position.add(forward));
-		//lasers[shootCycle+1].lookAt(ship);
-		
-		//System.out.println("after: " + lasers[shootCycle].getWorldForwardAxis());
-		
-		//p1.setLinearVelocity(forward.mul(laserSpeed).toFloatArray());
-
-		p1.setLinearVelocity(toFloatArray(forward.mul(laserSpeed)));
-		p2.setLinearVelocity(toFloatArray(forward.mul(laserSpeed)));
+		forward.mul(laserSpeed);
+		p1.setLinearVelocity(toFloatArray(forward));
+		p2.setLinearVelocity(toFloatArray(forward));
 		
 		shootCycle += 2;
 		shootCycle%=(lasers.length);

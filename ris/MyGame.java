@@ -160,12 +160,17 @@ public class MyGame extends VariableFrameRateGame {
 	private static Engine engine;
 	private InputManager im;
 
+	private NodeMaker nm;
+
 	private GameObject cockpitO, shipObj, satellite, blueShipO;
+	private GameObject[] asteroids;
 
 	private PhysicsObject shipPhysObj;
 
-	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS, laserS, throttleS, scoreS, npcS;
-	private TextureImage stuff, things, cockpitBlueT, blueShipT, laserT, throttleT, scoreT, npcT;
+	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS, laserS, throttleS, scoreS, npcS,
+					 asteroid1S, asteroid2S;
+	private TextureImage stuff, things, cockpitBlueT, blueShipT, laserT, throttleT, scoreT, npcT,
+					 asteroid1T, asteroid2T;
 	private Light ambientLight, light1, light2;
 	private NodeController rc, sc;
 	private int spaceBox; // skybox
@@ -208,13 +213,15 @@ public class MyGame extends VariableFrameRateGame {
 	}
 	
 	public void loadShapes(){
+		System.out.println("loadShapes");
 		blueShipS = new ImportedModel("blueGhost.obj");
 		cockpitBlueS = new ImportedModel("blueCockpit.obj");
 		laserS = new ImportedModel("otherLaser.obj");
 		throttleS = new ImportedModel("throttleIndicator.obj");
 		scoreS = new ImportedModel("scoreIndicator.obj");
 		npcS = new ImportedModel("DropShipVer4.obj");
-
+		asteroid1S = new ImportedModel("Asteroid1.obj");
+		asteroid2S = new ImportedModel("Asteroid2.obj");
 	}
 
 	public void loadTextures(){
@@ -224,6 +231,8 @@ public class MyGame extends VariableFrameRateGame {
 		throttleT = new TextureImage("throttleIndicator.png");
 		scoreT = new TextureImage("scoreIndicator.png");
 		npcT = new TextureImage("DropShipVer4.png");
+		asteroid1T = new TextureImage("Object3.png");
+		asteroid2T = new TextureImage("Object4.png");
 	}
 
 	public void buildObjects(){
@@ -244,19 +253,21 @@ public class MyGame extends VariableFrameRateGame {
 		//blueShipO.setLocalScale(initialScale);
 		shipObj.setLocalScale(initialScale);
 	}
-
+	
 	public void initializeGame() {
 		print("initializeGame");
 		Light.setGlobalAmbient(0.5f,0.5f,0.5f);
 		light1 = new Light();
 		light1.setLocation(new Vector3f(0,10f,0));
 		(engine.getSceneGraph()).addLight(light1);
-
+		
 		Vector3f position = new Vector3f(0,0,0);
 		try {
 			setupCamera();
 			setupPhysics();
+			nm = new NodeMaker(this);
 			setupInputs();
+			setupSceneObjects();
 		} catch (Exception e) {
 			print("Unable to setup game");
 			System.exit(0);
@@ -264,7 +275,6 @@ public class MyGame extends VariableFrameRateGame {
 		print("done initializingGame");
 	}
 	
-	//TODO confirm skybox loaded properly (look around)
 	public void loadSkyBoxes(){
 		System.out.println("loadSkyBoxes");
 		spaceBox = (engine.getSceneGraph()).loadCubeMap("spaceBox");
@@ -272,12 +282,10 @@ public class MyGame extends VariableFrameRateGame {
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	}
 	
-	//TODO setup cameras
 	protected void setupCamera() {
 		getCamera().setLocation(new Vector3f(0f,0f,25f));
 	}
 
-	//TODO setup physics
 	private void setupPhysics() {
 		print("setupPhysics()");
 		String engine = "tage.physics.JBullet.JBulletPhysicsEngine";
@@ -301,13 +309,16 @@ public class MyGame extends VariableFrameRateGame {
 	//TODO inputs and controls
 	//seperate methods for keyboards/gamepads
 	protected void setupInputs() throws IOException {
-		//im = new GenericInputManager();
 		im = new InputManager();
 		playerController = new FlightController(this);
 		
 		//setupAdditionalTestControls(im);
 		
 		//animationThrottleUp()
+	}
+
+	private void setupSceneObjects(){
+		asteroids = nm.makeAsteroids();
 	}
 
 	public void update() {
@@ -318,7 +329,6 @@ public class MyGame extends VariableFrameRateGame {
 	}
 
 	/*
-
 	public MyGame(String serverAddr, int sPort) {
 		super();
 		this.serverAddress = serverAddr;
@@ -364,12 +374,9 @@ public class MyGame extends VariableFrameRateGame {
 		else {
 			//ask client protocol to send initial join message
 			//to server, with a unique modifier for this client
-			
 			print("sendJoinMessage()");
-			
 			protClient.sendJoinMessage();
 		}
-		
 	}
 
 	//TODO maybe delete
@@ -383,8 +390,6 @@ public class MyGame extends VariableFrameRateGame {
 		else if(fullScreen == 1) {
 			rs.createRenderWindow(new DisplayMode(1000, 700, 24, 60), false);
 		}
-		
-		
 	}
 	
 	//TODO might be unnecessary
@@ -405,7 +410,7 @@ public class MyGame extends VariableFrameRateGame {
 		System.out.println("chooseTeam: " + chooseTeam);
 	}
 	
-	//TODO setup cameras
+	//TODO probably can be deleted
 	@Override
 	protected void setupCameras(SceneManager sm, RenderWindow rw) {
 		
@@ -1137,7 +1142,7 @@ public class MyGame extends VariableFrameRateGame {
 	*/
 	
 	/*
-	//TODO update marker
+	//TODO update
 	public void update() {
 	//protected void update(Engine engine) {
 
@@ -1619,13 +1624,18 @@ public class MyGame extends VariableFrameRateGame {
 	public PhysicsEngine getPhysicsEngine() { return physicsEngine; }
 	public InputManager getInputManager() { return im; }
 	public SceneGraph getSceneGraph() { return engine.getSceneGraph(); }
+	public NodeMaker getNodeMaker() { return nm; }
 	public GameObject getPlayerShip() { return shipObj; }
 	public ObjShape getLaserShape() { return laserS; }
-	public ObjShape getThrottleShape() { return laserS; }
+	public ObjShape getThrottleShape() { return throttleS; }
 	public ObjShape getScoreShape() { return laserS; }
 	public ObjShape getNPCShape() { return laserS; }
+	public ObjShape getAsteroid1Shape() { return asteroid1S; }
+	public ObjShape getAsteroid2Shape() { return asteroid2S; }
 	public TextureImage getLaserTexture() { return laserT; }
-	public TextureImage getThrottleTexture() { return laserT; }
+	public TextureImage getThrottleTexture() { return throttleT; }
 	public TextureImage getScoreTexture() { return laserT; }
 	public TextureImage getNPCTexture() { return laserT; }
+	public TextureImage getAsteroid1Texture() { return asteroid1T; }
+	public TextureImage getAsteroid2Texture() { return asteroid2T; }
 }

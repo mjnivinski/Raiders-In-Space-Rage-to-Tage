@@ -29,8 +29,8 @@ public class NodeMaker {
 	private PhysicsEngine physics;
 	private GameObject ship;
 
-	private ObjShape laserS, throttleS, scoreS, npcS;
-	private TextureImage laserT, throttleT, scoreT, npcT;
+	private ObjShape laserS, throttleS, scoreS, npcS, asteroid1S, asteroid2S;
+	private TextureImage laserT, throttleT, scoreT, npcT, asteroid1T, asteroid2T;
 
 	private float vals[] = new float[16];
 	
@@ -38,7 +38,7 @@ public class NodeMaker {
 		game = g;
 		sg = g.getSceneGraph();
 		eng = g.getEngine();
-		this.physics = g.getPhysicsEngine();
+		physics = g.getPhysicsEngine();
 		ship = g.getPlayerShip();
 		loadShapesAndTextures();
 	}
@@ -71,6 +71,12 @@ public class NodeMaker {
 		npcS = game.getNPCShape();
 		//npcT = new TextureImage("DropShipVer4.png");
 		npcT = game.getNPCTexture();
+
+		asteroid1S = game.getAsteroid1Shape();
+		asteroid1T = game.getAsteroid1Texture();
+
+		asteroid2S = game.getAsteroid2Shape();
+		asteroid2T = game.getAsteroid2Texture();
 	}
 	
 	public GameObject[] makeLasers() throws IOException {
@@ -111,7 +117,6 @@ public class NodeMaker {
 	}
 	
 	public GameObject makeLaser() throws IOException {
-		
 		GameObject laser = new GameObject(GameObject.root(), laserS, laserT);
 		
 		float farAway = 10000f;
@@ -128,6 +133,7 @@ public class NodeMaker {
 		laserPhysicsObject.setDamping(0, 0);
 		laser.setPhysicsObject(laserPhysicsObject);
 		
+		
 		laser.lookAt(ship);
 		
 		return laser;
@@ -143,25 +149,18 @@ public class NodeMaker {
 		}
 		
 		for(int i=0;i<10;i++) {
-			//TODO the localLocation might be wrong.
-			//theHud[i].setLocalPosition(-1 * i*throttleGap + (throttleGap*10/2),0,0);
-			//new Vector3f(-1 * i*throttleGap + (throttleGap*10/2),0,0);
-			//theHud[i].setLocalLocation(-1 * i*throttleGap + (throttleGap*10/2),0,0);
 			theHud[i].setLocalLocation(new Vector3f(-1 * i*throttleGap + (throttleGap*10/2),0,0));
 		}
 		return theHud;
 	}
 	
 	private GameObject makeThrottleIndicator(String name) throws IOException {
-		
 		GameObject throttle = new GameObject(GameObject.root(), throttleS, throttleT);
-		
 		float scale = 0.08f;
 		throttle.setLocalScale((new Matrix4f()).scaling(scale));
 		throttle.setParent(ship);
-		
-		//TODO pitch the throttle
-		//throttle.pitch(Degreef.createFrom(270));
+		throttle.pitch(270);
+		throttle.applyParentRotationToPosition(true);
 		
 		return throttle;
 	}
@@ -183,16 +182,9 @@ public class NodeMaker {
 	}
 	
 	private GameObject makeScoreIndicator(String name) throws IOException {
-		
 		GameObject score = new GameObject(ship, scoreS, scoreT);
-
 		float scale = 0.06f;
 		score.setLocalScale((new Matrix4f()).scaling(scale));
-		//score.setParent(ship);
-
-		//TODO figure out the rotation for the throttle indicators, or any thing for that matter.
-		//ti.pitch(Degreef.createFrom(270));
-		
 		return score;
 	}
 	
@@ -220,5 +212,44 @@ public class NodeMaker {
 		npc.setPhysicsObject(npcPhysicsObject);
 		
 		return npc;
+	}
+
+	public GameObject[] makeAsteroids(){
+		//TODO setup asteroids
+		GameObject[] asteroids = new GameObject[8];
+
+		asteroids[0] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
+		asteroids[0].setLocalLocation(new Vector3f(612,100,100));
+		asteroids[0].setLocalScale((new Matrix4f()).scaling(20));
+		
+		asteroids[1] = new GameObject(GameObject.root(), asteroid2S, asteroid1T);
+		asteroids[1].setLocalLocation(new Vector3f(600,150,100));
+		asteroids[1].setLocalScale((new Matrix4f()).scaling(64));
+		
+		asteroids[2] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
+		asteroids[2].setLocalLocation(new Vector3f(577,112,106));
+		asteroids[2].setLocalScale((new Matrix4f()).scaling(30));
+		
+		asteroids[3] = new GameObject(GameObject.root(), asteroid1S, asteroid2T);
+		asteroids[3].setLocalLocation(new Vector3f(-560,145,115));
+		asteroids[3].setLocalScale((new Matrix4f()).scaling(12));
+		
+		asteroids[4] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
+		asteroids[4].setLocalLocation(new Vector3f(637,135,100));
+		asteroids[4].setLocalScale((new Matrix4f()).scaling(35,20,35));
+		
+		asteroids[5] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
+		asteroids[5].setLocalLocation(new Vector3f(615,200,115));
+		asteroids[5].setLocalScale((new Matrix4f()).scaling(90));
+		
+		asteroids[6] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
+		asteroids[6].setLocalLocation(new Vector3f(577,127,130));
+		asteroids[6].setLocalScale((new Matrix4f()).scaling(5,10,15));
+		
+		asteroids[7] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
+		asteroids[7].setLocalLocation(new Vector3f(-400,100,135));
+		asteroids[7].setLocalScale((new Matrix4f()).scaling(88,100,88));
+
+		return asteroids;
 	}
 }
