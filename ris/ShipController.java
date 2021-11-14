@@ -115,8 +115,6 @@ public class ShipController {
 	private Vector3f[] throttlePositions;
 	private void setupThrottleIndicator() throws IOException {
 
-		//TODO maybe fix the models
-
 		throttleBase = new GameObject(GameObject.root());
 		throttleBase.applyParentRotationToPosition(true);
 		
@@ -273,7 +271,7 @@ public class ShipController {
 	//float heightDifference;
 	public void updateVerticalPosition()
 	{ 
-		//TODO what is this? ground stuff?
+		//TODO figure out how to get the vertical height at the ships X,Z position
 		//get Tesselation and the vertical height at the ships X,Z position
 		/*
 		SceneNode tessN = eng.getSceneManager().getSceneNode("TessN");

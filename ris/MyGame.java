@@ -17,6 +17,8 @@ import java.io.IOException;
 
 import tage.*;
 import tage.shapes.*;
+import tage.nodeControllers.*;
+import tage.Light;
 
 //import tage.rml.*;
 //import tage.audio.AudioManagerFactory;
@@ -160,17 +162,32 @@ public class MyGame extends VariableFrameRateGame {
 	private static Engine engine;
 	private InputManager im;
 
+	private ThrottleController throttleController;
+
 	private NodeMaker nm;
 
 	private GameObject cockpitO, shipObj, satellite, blueShipO;
+
+	private GameObject tempShip;
+	private GameObject terrain;
+
 	private GameObject[] asteroids;
 
 	private PhysicsObject shipPhysObj;
 
 	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS, laserS, throttleS, scoreS, npcS,
 					 asteroid1S, asteroid2S;
+	
 	private TextureImage stuff, things, cockpitBlueT, blueShipT, laserT, throttleT, scoreT, npcT,
 					 asteroid1T, asteroid2T;
+	private ObjShape terrainS;
+	private TextureImage terrainT, terrainHM;
+
+	private GameObject hand;
+	private AnimatedShape handS;
+	private TextureImage handT;
+
+
 	private Light ambientLight, light1, light2;
 	private NodeController rc, sc;
 	private int spaceBox; // skybox
@@ -179,6 +196,7 @@ public class MyGame extends VariableFrameRateGame {
 	private float vals[] = new float[16];
 
 	private float deltaTime, previousTime;
+	private int shipLives = 3;
 
 	public MyGame(){ super(); }
 
@@ -222,6 +240,8 @@ public class MyGame extends VariableFrameRateGame {
 		npcS = new ImportedModel("DropShipVer4.obj");
 		asteroid1S = new ImportedModel("Asteroid1.obj");
 		asteroid2S = new ImportedModel("Asteroid2.obj");
+		terrainS = new TerrainPlane();
+		handS = new AnimatedShape("MyFettHandVer5.rkm", "MyFettHandVer5.rks");
 	}
 
 	public void loadTextures(){
@@ -233,6 +253,9 @@ public class MyGame extends VariableFrameRateGame {
 		npcT = new TextureImage("DropShipVer4.png");
 		asteroid1T = new TextureImage("Object3.png");
 		asteroid2T = new TextureImage("Object4.png");
+		terrainT = new TextureImage("carpet.png");
+		terrainHM = new TextureImage("scribble.jpg");
+		handT = new TextureImage("FettArmVer5.png");
 	}
 
 	public void buildObjects(){
@@ -243,7 +266,8 @@ public class MyGame extends VariableFrameRateGame {
 		//shipObj = new GameObject(GameObject.root());
 		//shipObj = new GameObject(GameObject.root(), null, cockpitBlueT);
 
-		new GameObject(GameObject.root(), blueShipS, blueShipT);
+		tempShip = new GameObject(GameObject.root(), blueShipS, blueShipT);
+		tempShip.setLocalLocation(tempShip.getLocalLocation().add(new Vector3f(10,0,0)));
 
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(1f);
@@ -306,7 +330,7 @@ public class MyGame extends VariableFrameRateGame {
 		shipObj.setPhysicsObject(shipPhysObj);
 	}
 
-	//TODO inputs and controls
+	//TODO inputs and controls ,still need to destroy terrain and toggle lights
 	//seperate methods for keyboards/gamepads
 	protected void setupInputs() throws IOException {
 		im = new InputManager();
@@ -317,15 +341,23 @@ public class MyGame extends VariableFrameRateGame {
 		//animationThrottleUp()
 	}
 
-	private void setupSceneObjects(){
+	private void setupSceneObjects() throws IOException{
 		asteroids = nm.makeAsteroids();
+		setupScoreIndicator();
+		setupLights();
+		setupTerrain();
+		setupAnimations();
+		throttleController = new ThrottleController(this);
 	}
 
 	public void update() {
+		livesUpdate();
 		updateDeltaTime();
 		im.update(deltaTime);
 		physicsUpdate();
 		playerController.update();
+		//updateLights();
+		animationUpdate();
 	}
 
 	/*
@@ -378,29 +410,6 @@ public class MyGame extends VariableFrameRateGame {
 			protClient.sendJoinMessage();
 		}
 	}
-
-	//TODO maybe delete
-	@Override
-	protected void setupWindow(RenderSystem rs, GraphicsEnvironment ge) {
-		print("setupWindow");
-		
-		if(fullScreen == 0) {
-			rs.createRenderWindow(true);
-		}
-		else if(fullScreen == 1) {
-			rs.createRenderWindow(new DisplayMode(1000, 700, 24, 60), false);
-		}
-	}
-	
-	//TODO might be unnecessary
-	static int fullScreen = 1;
-	private static void FSEM() {
-		
-		fullScreen = JOptionPane.showConfirmDialog(null,  "Full Screen?", "choose one", JOptionPane.YES_NO_OPTION);
-	    //0 is yes
-		//1 is no
-		System.out.println("fullScreen: " + fullScreen);
-	}
 	
 	static int chooseTeam;
 	private static void chooseTeam() {
@@ -408,26 +417,6 @@ public class MyGame extends VariableFrameRateGame {
 		//0 is yes
 		//1 is no
 		System.out.println("chooseTeam: " + chooseTeam);
-	}
-	
-	//TODO probably can be deleted
-	@Override
-	protected void setupCameras(SceneManager sm, RenderWindow rw) {
-		
-		print("setupCameras");
-		SceneNode rootNode = sm.getRootSceneNode();
-		Camera camera = sm.createCamera("MainCamera", Projection.PERSPECTIVE);
-		rw.getViewport(0).setCamera(camera);
-
-		camera.setRt((Vector3f) Vector3f.createFrom(1.0f, 0.0f, 0.0f));
-		camera.setUp((Vector3f) Vector3f.createFrom(0.0f, 1.0f, 0.0f));
-		camera.setFd((Vector3f) Vector3f.createFrom(0.0f, 0.0f, -1.0f));
-		camera.setPo((Vector3f) Vector3f.createFrom(0.0f, 0.0f, 0.0f));
-		SceneNode cameraNode = rootNode.createChildSceneNode(camera.getName() + "Node");
-		cameraNode.attachObject(camera);
-		camera.setPo((Vector3f) Vector3f.createFrom(0, 0, 1f));
-		this.camera = camera;
-		camera.setMode('r');
 	}
 	
 	//TODO Ship selection
@@ -448,64 +437,18 @@ public class MyGame extends VariableFrameRateGame {
 		this.eng = eng;
 		eMaker = new EntityMaker(eng,sm);
 		
-		
 		print("Setup Scene");
 		setupShip();
-		
-		
-		
-		
-		
-		
-	   	if (tm == null)
-				tm = eng.getTextureManager();
-	    	
-	    	SkyBox sky = sm.createSkyBox("thesky");
-	    	
-	    	Texture skyFront = tm.getAssetByPath("2front.png");
-	    	Texture skyBack = tm.getAssetByPath("2back.png");
-	    	Texture skyBottom = tm.getAssetByPath("2top.png");
-	    	Texture skyTop = tm.getAssetByPath("2bottom.png");
-	    	Texture skyLeft = tm.getAssetByPath("2left.png");
-	    	Texture skyRight = tm.getAssetByPath("2right.png");
-	    	
-	    	
-	    	AffineTransform skyTransform = new AffineTransform();
-	    	skyTransform.translate(0.0, skyFront.getImage().getHeight());
-	    	skyTransform.scale(1.0, 1.0);
-	    	skyFront.transform(skyTransform);
-	    	skyBack.transform(skyTransform);
-	    	skyLeft.transform(skyTransform);
-	    	skyRight.transform(skyTransform);
-			skyTop.transform(skyTransform);
-			skyBottom.transform(skyTransform);
-	    	
-	    	sky.setTexture(skyFront, SkyBox.Face.FRONT);
-	    	sky.setTexture(skyBack, SkyBox.Face.BACK);
-	    	sky.setTexture(skyTop, SkyBox.Face.TOP);
-	    	sky.setTexture(skyBottom, SkyBox.Face.BOTTOM);
-	    	sky.setTexture(skyLeft, SkyBox.Face.LEFT);
-	    	sky.setTexture(skyRight, SkyBox.Face.RIGHT);
-	    	
-	    	sm.setActiveSkyBox(sky);
-	    	
-			    	createAllNodes(sm);
-			    	
-			    	
-			    	
-		
+			
 		createAnimations(sm);
 			    	
 		setupNetworking();
 		
-		print("setup audio");
-	
-		print("setup physics");
-		setupPhysics();
 		nm = new NodeMaker(eng, sm, physicsEng);
 		setupPatrolNPC(eng,sm);
 		setupInputs(sm);
 		sm.getAmbientLight().setIntensity(new Color(.1f, .1f, .1f));
+
 		initAudio(sm);
 		
 		tc = new ThrottleController(sm,eng,this,shipN);
@@ -518,7 +461,7 @@ public class MyGame extends VariableFrameRateGame {
 	//TODO animation setup
 	private void createAnimations(SceneManager sm) throws IOException {
  
-		//Right Handl
+		//Right Hand
     	SkeletalEntity rightHand = sm.createSkeletalEntity("rightHandAv", "MyFettHandVer5.rkm", "MyFettHandVer5.rks");
     	
     	Texture tex6 = sm.getTextureManager().getAssetByPath("FettArmVer5.png");
@@ -740,106 +683,6 @@ public class MyGame extends VariableFrameRateGame {
 				shipN.attachChild(headlightNode);
 				
 				setupAsteroidField(sm);
-		
-	}
-	
-	//TODO asteroid setups
-	private void setupAsteroidField(SceneManager sm) throws IOException {
-		Entity asteroidM1E = sm.createEntity("asteroidM1", "Object3.obj");
-		asteroidM1E.setPrimitive(Primitive.TRIANGLES);
-    	asteroidM1 = sm.getRootSceneNode().createChildSceneNode(asteroidM1E.getName() + "Node");
-    	asteroidM1.moveForward(100.0f);
-    	asteroidM1.moveUp(100f);
-    	asteroidM1.moveLeft(612f);
-    	asteroidM1.setLocalScale(20, 20, 20);
-    	asteroidM1.attachObject(asteroidM1E);
-		
-		    	
-		    	Entity asteroidM2E = sm.createEntity("asteroidM2", "Object4.obj");
-		    	asteroidM2E.setPrimitive(Primitive.TRIANGLES);
-		    	asteroidM2 = sm.getRootSceneNode().createChildSceneNode(asteroidM2E.getName() + "Node");
-		    	asteroidM2.moveForward(100.0f);
-		    	asteroidM2.moveUp(150f);
-		    	asteroidM2.moveLeft(600f);
-		    	asteroidM2.setLocalScale(64, 64, 64);
-		    	asteroidM2.attachObject(asteroidM2E);
-				
-		    	Entity asteroidM3E = sm.createEntity("asteroidM3", "Object4.obj");
-		    	asteroidM3E.setPrimitive(Primitive.TRIANGLES);
-		    	asteroidM3 = sm.getRootSceneNode().createChildSceneNode(asteroidM3E.getName() + "Node");
-		    	asteroidM3.moveForward(106.0f);
-		    	asteroidM3.moveUp(112f);
-		    	asteroidM3.moveLeft(577f);
-		    	asteroidM3.setLocalScale(30, 30, 30);
-		    	asteroidM3.attachObject(asteroidM3E);
-				
-						Entity asteroidM4E = sm.createEntity("asteroidM4", "Object3.obj");
-						asteroidM4E.setPrimitive(Primitive.TRIANGLES);
-						asteroidM4 = sm.getRootSceneNode().createChildSceneNode(asteroidM4E.getName() + "Node");
-						asteroidM4.moveForward(115.0f);
-						asteroidM4.moveUp(145f);
-						asteroidM4.moveRight(560f);
-						asteroidM4.setLocalScale(12, 12, 12);
-						asteroidM4.attachObject(asteroidM4E);
-						
-						Entity asteroidM5E = sm.createEntity("asteroidM5", "Object3.obj");
-						asteroidM5E.setPrimitive(Primitive.TRIANGLES);
-						asteroidM5 = sm.getRootSceneNode().createChildSceneNode(asteroidM5E.getName() + "Node");
-						asteroidM5.moveForward(100.0f);
-						asteroidM5.moveUp(135f);
-						asteroidM5.moveLeft(637f);
-						asteroidM5.setLocalScale(35, 20, 35);
-						asteroidM5.attachObject(asteroidM5E);
-
-						Entity Maker.Asteroid("asteroidM1", "Object3.obj", sm, 100.0f, 135f, 637f, new Vector3f(35,20,35));
-						Entity Maker.Asteroid("asteroidM2", "Object3.obj", sm, 100.0f, 135f, 637f, new Vector3f(35,20,35));
-						Entity Maker.Asteroid("asteroidM3", "Object3.obj", sm, 100.0f, 135f, 637f, new Vector3f(35,20,35));
-						Entity Maker.Asteroid("asteroidM4", "Object3.obj", sm, 100.0f, 135f, 637f, new Vector3f(35,20,35));
-						Entity Maker.Asteroid("asteroidM5", "Object3.obj", sm, 100.0f, 135f, 637f, new Vector3f(35,20,35));
-								
-								
-								RotationController rc13 =
-								    	new RotationController(Vector3f.createUnitVectorY(), .07f);
-										rc13.addNode(asteroidM5);
-								    	sm.addController(rc13);
-								    	
-								    	
-								    	Entity asteroidM6E = sm.createEntity("asteroidM6", "Object4.obj");
-								    	asteroidM6E.setPrimitive(Primitive.TRIANGLES);
-								    	asteroidM6 = sm.getRootSceneNode().createChildSceneNode(asteroidM6E.getName() + "Node");
-								    	asteroidM6.moveForward(115.0f);
-								    	asteroidM6.moveUp(200f);
-								    	asteroidM6.moveLeft(612f);
-								    	asteroidM6.setLocalScale(90, 90, 90);
-								    	asteroidM6.attachObject(asteroidM6E);
-										
-								    	
-								    	Entity asteroidM7E = sm.createEntity("asteroidM7", "Object4.obj");
-								    	asteroidM7E.setPrimitive(Primitive.TRIANGLES);
-								    	asteroidM7 = sm.getRootSceneNode().createChildSceneNode(asteroidM7E.getName() + "Node");
-								    	asteroidM7.moveForward(130.0f);
-								    	asteroidM7.moveUp(127f);
-								    	asteroidM7.moveLeft(577f);
-								    	asteroidM7.setLocalScale(5, 10, 15);
-								    	asteroidM7.attachObject(asteroidM7E);
-										
-										
-										RotationController rc15 =
-										    	new RotationController(Vector3f.createUnitVectorZ(), .4f);
-										    	rc15.addNode(asteroidM3);
-										    	sm.addController(rc15);
-										    	
-												Entity asteroidM8E = sm.createEntity("asteroidM8", "Object3.obj");
-												asteroidM8E.setPrimitive(Primitive.TRIANGLES);
-												asteroidM8 = sm.getRootSceneNode().createChildSceneNode(asteroidM8E.getName() + "Node");
-												asteroidM8.moveForward(155.0f);
-												asteroidM8.moveUp(100f);
-												asteroidM8.moveRight(400f);
-												asteroidM8.setLocalScale(88, 100, 88);
-												asteroidM8.attachObject(asteroidM8E);
-												
-												
-		    	
 	}
 	
 	//TODO lights
@@ -878,18 +721,15 @@ public class MyGame extends VariableFrameRateGame {
 		headlightNode3.setLocalPosition(0.3f,0,0);
 		
 		
-		//lightHolder.attachObject(headlightNode1);
+		
 		lightHolder.attachChild(headlightNode1);
-		//lightHolder.attachObject(headlightNode2);
+		
 		lightHolder.attachChild(headlightNode2);
-		//lightHolder.attachObject(headlightNode3);
+		
 		lightHolder.attachChild(headlightNode3);
 		
 		lightHolder.pitch(Degreef.createFrom(-90));
 		
-		//lightHolder.moveBackward(2);
-
-		//this.getEngine().getSceneManager().getSceneNode("myShipNode").attachChild(headlightNode);
 		shipN.attachChild(lightHolder);
 	}
 
@@ -950,51 +790,272 @@ public class MyGame extends VariableFrameRateGame {
         state1.setTexture(blueTexture2);
         BlueCockpitE.setRenderState(state1);
 	}
+	*/
 	
-	//TODO lives hud stuff
-	private SceneNode[] lives;
-	private Vector3 scorePosition = Vector3f.createFrom(0.8f,-0.3f,-0.8f);
-	//private Vector3 scorePosition = Vector3f.createFrom(0,0,0);
-	private SceneNode scoreHolder;
-	private Vector3[] livesPositions;
+	//TODO Lives Hud still needs to be confirmed by losing a life/all lives
+	//private SceneNode[] lives;
+	private GameObject[] lives;
+
+	//private Vector3 scorePosition = Vector3f.createFrom(0.8f,-0.3f,-0.8f);
+	private Vector3f scorePosition = new Vector3f(0.8f,-0.3f,-0.8f);
+	
+	//private SceneNode scoreHolder;
+	private GameObject scoreHolder;
+	//private Vector3[] livesPositions;
+	private Vector3f[] livesPositions;
 	private void setupScoreIndicator() throws IOException {
 		lives = nm.makeScoreIndicators();
-		livesPositions = new Vector3[lives.length];
+		livesPositions = new Vector3f[lives.length];
 		
-		scoreHolder = sm.getRootSceneNode().createChildSceneNode("scoreHolder");
+		//scoreHolder = sm.getRootSceneNode().createChildSceneNode("scoreHolder");
+		scoreHolder = new GameObject(shipObj);
+		scoreHolder.applyParentRotationToPosition(true);
 		
 		for(int i=0; i<lives.length;i++) {
-			livesPositions[i] = lives[i].getLocalPosition();
-			scoreHolder.attachChild(lives[i]);
+			livesPositions[i] = lives[i].getLocalLocation();
+			//scoreHolder.attachChild(lives[i]);
+			lives[i].setParent(scoreHolder);
 		}
 		
-		shipN.attachChild(scoreHolder);
+		//shipN.attachChild(scoreHolder);
+		//scoreHolder.setParent(shipObj);
 		
-		scoreHolder.setLocalPosition(scorePosition);
+		//scoreHolder.setLocalPosition(scorePosition);
+		scoreHolder.setLocalLocation(scorePosition);
 		
 		//scoreHolder.roll(Degreef.createFrom(90));
 		
 		
-		scoreHolder.roll(Degreef.createFrom(90));
-		scoreHolder.pitch(Degreef.createFrom(40));
-		
-		scoreHolder.moveBackward(1);
-		scoreHolder.moveLeft(0.1f);
+		//scoreHolder.roll(Degreef.createFrom(90));
+		scoreHolder.roll(90);
+		//scoreHolder.pitch(Degreef.createFrom(40));
+		scoreHolder.pitch(40);
 	}
 	
 	private void livesUpdate() {
-		for(SceneNode n : lives) {
-			n.setLocalPosition(10000,10000,10000);
+		//for(SceneNode n : lives) {
+		for(GameObject n : lives) {
+			n.setLocalLocation(new Vector3f(10000,10000,10000));
 		}
 		for(int i=0; i<shipLives;i++) {
-			lives[i].setLocalPosition(livesPositions[i]);
+			lives[i].setLocalLocation(livesPositions[i]);
 		}
 		if(shipLives == 0) {
 			System.exit(0);
 		}
 	}
+
+	Light headlight1;
+	Light headlight2;
+	Light headlight3;
+
+	private GameObject lightHolder;
+	private void setupLights(){
+		//lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
+		lightHolder = new GameObject(GameObject.root());
+		
+		//Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
+		headlight1 = new Light();
+		
+		//Light headlight1 = Light();
+		headlight1.setType(Light.LightType.SPOTLIGHT);
+
+		
+		//headlight1.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight1.setCutoffAngle(10);
+		headlight1.setSpecular(255,255,255);
+		headlight1.setRange(10f);
+
+		//SceneNode headlightNode1 = sm.getRootSceneNode().createChildSceneNode("headlightNode1");
+		//headlightNode1.attachObject(headlight1);
+		
+		//Light headlight2 = sm.createLight("headlight2", Light.Type.SPOT);
+		headlight2 = new Light();
+		headlight2.setType(Light.LightType.SPOTLIGHT);
+		//headlight2.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight2.setCutoffAngle(10);
+		headlight2.setSpecular(255,255,255);
+		headlight2.setRange(10f);
+		
+		
+		//SceneNode headlightNode2 = sm.getRootSceneNode().createChildSceneNode("headlightNode2");
+		//headlightNode2.attachObject(headlight2);
+		
+		//Light headlight3 = sm.createLight("headlight3", Light.Type.SPOT);
+		headlight3 = new Light();
+		headlight3.setType(Light.LightType.SPOTLIGHT);
+		//headlight3.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight3.setCutoffAngle(10);
+		headlight3.setSpecular(255,255,255);
+		headlight3.setRange(10f);
+
+		//SceneNode headlightNode3 = sm.getRootSceneNode().createChildSceneNode("headlightNode3");
+		//headlightNode3.attachObject(headlight3);
+		
+		//headlightNode1.setLocalPosition(-0.3f,0,0);
+		//headlightNode3.setLocalPosition(0.3f,0,0);
+		
+		
+		
+		//lightHolder.attachChild(headlightNode1);
+		
+		//lightHolder.attachChild(headlightNode2);
+		
+		//lightHolder.attachChild(headlightNode3);
+		
+		//lightHolder.pitch(Degreef.createFrom(-90));
+		lightHolder.pitch(-90);
+		
+		//shipN.attachChild(lightHolder);
+		lightHolder.setParent(getPlayerShip());
+		lightHolder.lookAt(new Vector3f(0,1,0));
+		lightHolder.applyParentRotationToPosition(true);
+	}
+
+	private void updateLights(){
+		Vector3f location = lightHolder.getWorldLocation();
+		Vector3f up = shipObj.getLocalUpVector();
+		//System.out.println(location + " " + shipObj.getLocalUpVector());
+		//print("" + shipObj.getWorldLocation().sub(lightHolder.getWorldLocation()));
+		headlight1.setLocation(location);
+		//headlight2.setLocation(location);
+		//headlight3.setLocation(location);
+		headlight1.setDirection(up);
+		headlight2.setDirection(up);
+		headlight3.setDirection(up);
+
+		print(shipObj.getWorldUpVector() + " " + headlight1.getDirection()[0] + "," + headlight1.getDirection()[1] + ","
+		 + headlight1.getDirection()[2]);
+	}
+
+	private void setupTerrain(){
+		terrain = new GameObject(GameObject.root(), terrainS, terrainT);
+		terrain.setHeightMap(terrainHM);
+		terrain.up(-100);
+		Matrix4f scale = (new Matrix4f()).scaling(1000,50,1000);
+		terrain.setLocalScale(scale);
+	}
+
+	private void setupAnimations(){
+		handS.loadAnimation("throttleUpAndPause", "ThrustUpAndPause.rka");
+		handS.loadAnimation("throttleDownAndPause", "ThrustDownAndPause.rka");
+		handS.loadAnimation("throttleBackFromUp", "FromUp_GoDown_andPause.rka");
+		handS.loadAnimation("throttleBackFromDown", "FromDown_GoUp_andPause.rka");
+		hand = new GameObject(shipObj, handS, handT);
+		hand.up(-0.5f);
+		hand.left(-0.7f);
+		hand.applyParentRotationToPosition(true);
+
+		/*//Right Hand
+    	SkeletalEntity rightHand = sm.createSkeletalEntity("rightHandAv", "MyFettHandVer5.rkm", "MyFettHandVer5.rks");
+    	
+    	Texture tex6 = sm.getTextureManager().getAssetByPath("FettArmVer5.png");
+    	TextureState tstate6 = (TextureState) sm.getRenderSystem()
+    	.createRenderState(RenderState.Type.TEXTURE);
+    	tstate6.setTexture(tex6);
+    	rightHand.setRenderState(tstate6);
+   	
+    	SceneNode rightHandN = sm.getRootSceneNode().createChildSceneNode("rightHandNode");
+    	rightHandN.attachObject(rightHand);
+    	float scale = 0.5f;
+    	rightHandN.scale(scale,scale,scale);//
+    	rightHandN.translate(-0.7f, -0.5f, 0);
+    		
+    		
+    			
+    	rightHand.loadAnimation("throttleUpAndBackAnimation", "ThrustUpAndBack.rka");
+    	rightHand.loadAnimation("throttleDownAndBackAnimation", "ThrustDownAndBack2.rka");
+    	rightHand.loadAnimation("throttleLeftAndBackAnimation", "ThrustLeftandBack.rka");
+    	rightHand.loadAnimation("throttleRightAndBackAnimation", "ThrustRightandBack.rka");
+    			
+    			
+    	rightHand.loadAnimation("throttleUpAndPause", "ThrustUpAndPause.rka");
+    	rightHand.loadAnimation("throttleDownAndPause", "ThrustDownAndPause.rka");
+    	rightHand.loadAnimation("throttleBackFromUp", "FromUp_GoDown_andPause.rka");
+    	rightHand.loadAnimation("throttleBackFromDown", "FromDown_GoUp_andPause.rka");
+    			
+    		
+    	shipN.attachChild(rightHandN);
+    	rightHandN.moveDown(0.5f);
+    			
+    			//AnimationStar
+    			
+    			SkeletalEntity movingStar = 
+    					sm.createSkeletalEntity("movingStar", "Object6.rkm", "Object6.rks");
+    			
+    	    	Texture tex8 = sm.getTextureManager().getAssetByPath("Object6.png");
+    	    	TextureState tstate8 = (TextureState) sm.getRenderSystem()
+    	    	.createRenderState(RenderState.Type.TEXTURE);
+    	    	tstate8.setTexture(tex8);
+    	   	movingStar.setRenderState(tstate8);
+    	   	
+        	SceneNode movingStarN =
+        			sm.getRootSceneNode().createChildSceneNode("movingStarNode");
+        	movingStarN.attachObject(movingStar);
+        	//movingStarN.scale(0.1f, 0.1f, 0.1f);//
+        	movingStarN.setLocalPosition(0.0f, 55f, 0.0f);
+        	
+        	movingStar.loadAnimation("Object6", "Object6.rka");
+        	
+        	movingStar.playAnimation("Object6", 0.5f, LOOP, 0);*/
+	}
+
+	private void animationUpdate(){
+		throttleController.update();
+		handS.updateAnimation();
+	}
+
+	/*
+	//TODO lights
+	private SceneNode lightHolder;
+	private void setupLights() {
+		
+		lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
+		
+		
+		
+		Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
+		headlight1.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight1.setSpecular(Color.white);
+		headlight1.setRange(10f);
+
+		SceneNode headlightNode1 = sm.getRootSceneNode().createChildSceneNode("headlightNode1");
+		headlightNode1.attachObject(headlight1);
+		
+		Light headlight2 = sm.createLight("headlight2", Light.Type.SPOT);
+		headlight2.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight2.setSpecular(Color.white);
+		headlight2.setRange(10f);
+
+		SceneNode headlightNode2 = sm.getRootSceneNode().createChildSceneNode("headlightNode2");
+		headlightNode2.attachObject(headlight2);
+		
+		Light headlight3 = sm.createLight("headlight3", Light.Type.SPOT);
+		headlight3.setConeCutoffAngle(Degreef.createFrom(10));
+		headlight3.setSpecular(Color.white);
+		headlight3.setRange(10f);
+
+		SceneNode headlightNode3 = sm.getRootSceneNode().createChildSceneNode("headlightNode3");
+		headlightNode3.attachObject(headlight3);
+		
+		headlightNode1.setLocalPosition(-0.3f,0,0);
+		headlightNode3.setLocalPosition(0.3f,0,0);
+		
+		
+		
+		lightHolder.attachChild(headlightNode1);
+		
+		lightHolder.attachChild(headlightNode2);
+		
+		lightHolder.attachChild(headlightNode3);
+		
+		lightHolder.pitch(Degreef.createFrom(-90));
+		
+		shipN.attachChild(lightHolder);
+	}*/
 	
 
+	/*
 	//TODO NPC stuff
 	private void setupPatrolNPC(Engine eng, SceneManager sm) throws IOException{
 		
@@ -1274,17 +1335,6 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 
-	float testLerp = 0f;
-	float elapsedTestTime = 10f;
-	
-	// method holds all actions that are used in every game, such as rendering and
-	// calculating elapsed time.
-	private void updateDefaults(Engine engine) {
-		rs = (GL4RenderSystem) engine.getRenderSystem();
-		elapsTime += engine.getElapsedTimeMillis();
-		im.update(elapsTime);
-	}
-
 	public float getSpeedScale() {
 		return speedScale;
 	}
@@ -1310,79 +1360,30 @@ public class MyGame extends VariableFrameRateGame {
 	public int getPlayerTeam() {
 		return chooseTeam;
 	}
-	
-	
-	public static void throttleUpAndBackAnimation()
-	{ 
-		SkeletalEntity rightHand = (SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-		rightHand.playAnimation("throttleUpAndBackAnimation", 0.5f, NONE, 0);
-
-	}
-	
-	public static void throttleDownAndBackAnimation()
-	{ 
-		SkeletalEntity rightHand = (SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-		rightHand.playAnimation("throttleDownAndBackAnimation", 0.5f, NONE, 0);
-	}
-	
-	public static void throttleLeftAndBackAnimation()
-	{ 
-
-		SkeletalEntity rightHand =
-	(SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-	rightHand.playAnimation("throttleLeftAndBackAnimation", 0.5f, NONE, 0);
-
-	}
-	
-	public static void throttleRightAndBackAnimation()
-	{ 
-
-		SkeletalEntity rightHand = (SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-		rightHand.playAnimation("throttleRightAndBackAnimation", 0.5f, NONE, 0);
-	}
-	
-	
+	*/
 	
 	private float animationSpeed = 4f;
-	//public static void throttleUpAndPauseAnimation()
 	public void throttleUpAndPauseAnimation()
 	{ 
-
-		SkeletalEntity rightHand =
-	(SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-	rightHand.playAnimation("throttleUpAndPause", animationSpeed, SkeletalEntity.EndType.PAUSE, 0);
-
+		handS.playAnimation("throttleUpAndPause", animationSpeed, AnimatedShape.EndType.PAUSE, 0);
 	}
 	
-	//public static void throttleDownAndPauseAnimation()
 	public void throttleDownAndPauseAnimation()
 	{ 
-		System.out.println("throttleDownAndBackAnimation");
-		SkeletalEntity rightHand =
-				(SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-		rightHand.playAnimation("throttleDownAndPause", animationSpeed, SkeletalEntity.EndType.PAUSE, 0);
-
+		handS.playAnimation("throttleDownAndPause", animationSpeed, AnimatedShape.EndType.PAUSE, 0);
 	}
 	
-	//public static void throttleBackFromUpAnimation()
 	public void throttleBackFromUpAnimation()
-	{ 
-
-		SkeletalEntity rightHand =
-	(SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-	rightHand.playAnimation("throttleBackFromUp", animationSpeed, SkeletalEntity.EndType.PAUSE, 0);
-
+	{
+		handS.playAnimation("throttleBackFromUp", animationSpeed, AnimatedShape.EndType.PAUSE, 0);
 	}
 	
-	//public static void throttleBackFromDownAnimation()
 	public void throttleBackFromDownAnimation()
-	{ 
-
-		SkeletalEntity rightHand =
-	(SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-	rightHand.playAnimation("throttleBackFromDown", animationSpeed, SkeletalEntity.EndType.PAUSE, 0);
-
+	{
+		handS.playAnimation("throttleBackFromDown", animationSpeed, AnimatedShape.EndType.PAUSE, 0);
 	}
+
+	/*
 	
 	
 	private class destroyTerrain extends AbstractInputAction {
@@ -1394,7 +1395,7 @@ public class MyGame extends VariableFrameRateGame {
 			getSceneNode("TessN");
 			
 			//tessN.setLocalPosition(8000.0f, 8000.0f, 8000.0f);
-			tessN.moveDown(8000);
+			tessN.moveDown(10000);
 		}
 	}
 
@@ -1465,7 +1466,10 @@ public class MyGame extends VariableFrameRateGame {
 		audioMgr.getEar().setOrientation(avDir, Vector3f.createFrom(0,1,0));
 
 	}
+
+	*/
 	
+	/*
 	public void initAudio(SceneManager sm)
 	{ 
 		print("initAudio setup");
@@ -1544,7 +1548,8 @@ public class MyGame extends VariableFrameRateGame {
 	{
 		laserFireSound.play();
 	}
-	
+
+	*/
 
 	public int getThrottleSign() {
 		return playerController.getThrottleSign();
@@ -1560,13 +1565,7 @@ public class MyGame extends VariableFrameRateGame {
 
 	private int getYawSign() {
 		return playerController.getYawSign();
-
-	public SceneManager getSceneManager() { return sm; }
-	public Engine getEngine() { return eng; }
-	public PhysicsEngine getPhysicsEngine() { return physicsEng; }
-	public NodeMaker getNodeMaker() { return nm; }
-	public SceneNode getShip() { return shipN; }
-	*/
+	}
 
 	long elapsedTime;
 	long prevTime;
@@ -1628,13 +1627,13 @@ public class MyGame extends VariableFrameRateGame {
 	public GameObject getPlayerShip() { return shipObj; }
 	public ObjShape getLaserShape() { return laserS; }
 	public ObjShape getThrottleShape() { return throttleS; }
-	public ObjShape getScoreShape() { return laserS; }
+	public ObjShape getScoreShape() { return scoreS; }
 	public ObjShape getNPCShape() { return laserS; }
 	public ObjShape getAsteroid1Shape() { return asteroid1S; }
 	public ObjShape getAsteroid2Shape() { return asteroid2S; }
 	public TextureImage getLaserTexture() { return laserT; }
 	public TextureImage getThrottleTexture() { return throttleT; }
-	public TextureImage getScoreTexture() { return laserT; }
+	public TextureImage getScoreTexture() { return scoreT; }
 	public TextureImage getNPCTexture() { return laserT; }
 	public TextureImage getAsteroid1Texture() { return asteroid1T; }
 	public TextureImage getAsteroid2Texture() { return asteroid2T; }
