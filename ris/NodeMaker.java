@@ -219,7 +219,6 @@ public class NodeMaker {
 		//TODO setup asteroids
 		GameObject[] asteroids = new GameObject[8];
 
-		
 		asteroids[0] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
 		asteroids[0].setLocalLocation(new Vector3f(612,100,100));
 		//asteroids[0].setLocalScale((new Matrix4f()).scaling(20));
@@ -230,25 +229,21 @@ public class NodeMaker {
 		//asteroids[1].setLocalScale((new Matrix4f()).scaling(64));
 		asteroids[1].setLocalScale((new Matrix4f()).scaling(6.4f));
 		
-		
 		asteroids[2] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
 		asteroids[2].setLocalLocation(new Vector3f(577,112,106));
 		//asteroids[2].setLocalScale((new Matrix4f()).scaling(30));
 		asteroids[2].setLocalScale((new Matrix4f()).scaling(3));
-		
 		
 		asteroids[3] = new GameObject(GameObject.root(), asteroid1S, asteroid2T);
 		asteroids[3].setLocalLocation(new Vector3f(-560,145,115));
 		//asteroids[3].setLocalScale((new Matrix4f()).scaling(12));
 		asteroids[3].setLocalScale((new Matrix4f()).scaling(1.2f));
 		
-		
 		asteroids[4] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
 		asteroids[4].setLocalLocation(new Vector3f(637,135,100));
 		//asteroids[4].setLocalScale((new Matrix4f()).scaling(35,20,35));
 		asteroids[4].setLocalScale((new Matrix4f()).scaling(3.5f,2.0f,3.5f));
 
-		
 		asteroids[5] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
 		asteroids[5].setLocalLocation(new Vector3f(615,200,115));
 		//asteroids[5].setLocalScale((new Matrix4f()).scaling(90));
@@ -264,7 +259,6 @@ public class NodeMaker {
 		//asteroids[7].setLocalScale((new Matrix4f()).scaling(88,100,88));
 		asteroids[7].setLocalScale((new Matrix4f()).scaling(8.8f,10.0f,8.8f));
 		
-
 		RotationController rc = new RotationController(game.getEngine(), new Vector3f(0,1,0), 1f);
 		rc.setSpeed(0.0007f);
 		rc.addTarget(asteroids[4]);

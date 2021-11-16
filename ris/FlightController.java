@@ -4,27 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.lang.Math;
 
-/*import ris.MyGame;
-//import a3.myGameEngine.DeadZones;
-//import a3.myGameEngine.SimpleMath;
-import ray.input.InputManager;
-import ray.input.action.AbstractInputAction;
-import ray.physics.PhysicsEngine;
-import ray.rage.Engine;
-import ray.rage.scene.Camera;
-import ray.rage.scene.SceneManager;
-import ray.rage.scene.SceneNode;
-import ray.rml.Degreef;
-import ray.rml.Vector3;
-import ray.rml.Vector3f;*/
-//import net.java.games.input.Event;
-//import net.java.games.input.Controller;
 import net.java.games.input.*;
 import tage.input.action.AbstractInputAction;
 
 import tage.*;
 import tage.input.*;
-//import tage.rml.Vector3;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 import org.joml.*;
@@ -33,14 +17,11 @@ import org.joml.*;
 public class FlightController {
 	
 	private MyGame game;
-	//private SceneManager sm;
 	private Engine eng;
 	private PhysicsEngine physics;
 	private InputManager im;
 	private Camera camera;
 	
-	//temporary for control test
-	//private SceneNode target;
 	private GameObject ship;
 	private GameObject shipSeat;
 	
@@ -54,16 +35,6 @@ public class FlightController {
 	ControllerPitch CP;
 	
 	FireWeapon FW;
-	
-	//LeftHorizontal LH;
-	//LeftVertical LV;
-	//RightHorizontal RH;
-	//RightVertical RV;
-	//LeftBumper LB;
-	//RightBumper RB;
-	//GamepadThrottle GT;
-	
-	//Keyboard Abastract Action Classes
 	
 	RollLeft rollLeft;
 	RollRight rollRight;
@@ -97,8 +68,6 @@ public class FlightController {
 		shipController = new ShipController(game, this);
 		
 		shipSeat = new GameObject(ship);
-		
-		
 		shipSeat.setLocalLocation(cameraOffset);
 		shipSeat.applyParentRotationToPosition(true);
 		
@@ -117,12 +86,7 @@ public class FlightController {
 				keyboards.add(controllers.get(i).getName());
 		}
 		
-		//setup gamepad controls
-		
 		if(gamepadName != null) setupGamepad(im, gamepadName);
-		
-		//setup keyboard controls
-		
 		setupKeyboard(im);
 	}
 	
@@ -132,14 +96,6 @@ public class FlightController {
 		CY = new ControllerYaw();
 		CP = new ControllerPitch();
 		FW = new FireWeapon();
-		
-		//LH = new LeftHorizontal();
-		//LV = new LeftVertical();
-		//RH = new RightHorizontal();
-		//RV = new RightVertical();
-		//LB = new LeftBumper();
-		//RB = new RightBumper();
-		//GT = new GamepadThrottle();
 
 		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Axis.X, CR,
 				InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -155,25 +111,6 @@ public class FlightController {
 		
 		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Axis.Z, FW,
 				InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		
-		/*
-		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Button._4, LB,
-				InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);
-		
-		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Button._5, RB,
-				InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);*/
-		
-		/*im.associateAction(controllerName, net.java.games.input.Component.Identifier.Axis.Z, GT,
-				InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);*/
-		
-	
-		/*
-		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Axis.POV, dPA,
-				InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		
-		im.associateAction(controllerName, net.java.games.input.Component.Identifier.Button._0, aBA,
-				InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
-		*/
 	}
 	
 	private void setupKeyboard(InputManager im) {
@@ -309,21 +246,6 @@ public class FlightController {
 		}
 	}
 	
-	/*
-	private class RightBumper extends AbstractInputAction {
-		@Override
-		public void performAction(float arg0, Event e) {
-			//shipController.setRightBumper(e.getValue());
-		}
-	}
-	
-	private class LeftBumper extends AbstractInputAction {
-		@Override
-		public void performAction(float arg0, Event e) {
-			//shipController.setLeftBumper(e.getValue());
-		}
-	}*/
-	
 	/*****************************************************************
 	 * KEYBOARD SECTION												 *
 	 *****************************************************************
@@ -333,16 +255,13 @@ public class FlightController {
 		@Override
 		public void performAction(float arg0, Event e) {
 			shipController.setRollLeft(-1 * e.getValue());
-		//	ris.MyGame.throttleLeftAndBackAnimation();
 		}
 	}
 	
 	private class RollRight extends AbstractInputAction {
 		@Override
 		public void performAction(float arg0, Event e) {
-			//print("rollRight");
 			shipController.setRollRight(-1 * e.getValue());
-		//	ris.MyGame.throttleRightAndBackAnimation();
 		}
 	}
 	
@@ -364,7 +283,6 @@ public class FlightController {
 		@Override
 		public void performAction(float arg0, Event e) {
 			shipController.setYawRight(e.getValue());
-		//	ris.MyGame.throttleRightAndBackAnimation();
 		}
 	}
 	
@@ -372,7 +290,6 @@ public class FlightController {
 		@Override
 		public void performAction(float arg0, Event e) {
 			shipController.setYawLeft(e.getValue());
-		//	ris.MyGame.throttleLeftAndBackAnimation();
 		}
 	}
 	
@@ -380,7 +297,6 @@ public class FlightController {
 		@Override
 		public void performAction(float arg0, Event e) {
 			shipController.setThrottleUp(e.getValue());
-		//	ris.MyGame.throttleUpAndBackAnimation();
 		}
 	}
 	
@@ -388,7 +304,6 @@ public class FlightController {
 		@Override
 		public void performAction(float arg0, Event e) {
 			shipController.setThrottleDown(e.getValue());
-		//	ris.MyGame.throttleDownAndBackAnimation();
 		}
 	}
 	
@@ -403,8 +318,6 @@ public class FlightController {
 	private class KeyboardFireWeapon extends AbstractInputAction {
 		@Override
 		public void performAction(float arg0, Event e) {
-			//if(e.getValue())
-			//print("Keyboard: " + e.getValue());
 			if(e.getValue() == 1) shipController.setFiring(true);
 			else shipController.setFiring(false);
 		}

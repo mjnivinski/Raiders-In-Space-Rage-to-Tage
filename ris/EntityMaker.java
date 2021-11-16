@@ -12,6 +12,7 @@ import ray.rage.scene.Entity;
 import ray.rage.scene.SceneManager;
 import ray.rage.scene.SceneNode;
 
+//TODO DEPRECATED
 public class EntityMaker {
 
 	private SceneManager sm;

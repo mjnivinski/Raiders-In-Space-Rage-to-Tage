@@ -57,5 +57,4 @@ public class VectorMath {
 		
 		return (Vector3f)Vector3f.createFrom(x,y,z);
 	}
-	
 }

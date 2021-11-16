@@ -1,6 +1,7 @@
 package ris;
 
 import java.io.IOException;
+import java.util.ArrayList;
 //import java.awt.*;
 //import java.awt.geom.AffineTransform;
 //import java.io.*;
@@ -20,39 +21,6 @@ import tage.shapes.*;
 import tage.nodeControllers.*;
 import tage.Light;
 
-//import tage.rml.*;
-//import tage.audio.AudioManagerFactory;
-//import tage.audio.AudioResource;
-//import tage.audio.AudioResourceType;
-//import tage.audio.IAudioManager;
-//import tage.audio.Sound;
-//import tage.audio.SoundType;
-
-//import tage.input.GenericInputManager;
-//import tage.input.InputManager;
-//import tage.input.action.AbstractInputAction;
-
-//import tage.asset.material.Material;
-//import tage.rage.asset.texture.Texture;
-//import tage.asset.texture.TextureManager;
-//import tage.game.*;
-//import tage.rendersystem.*;
-//import tage.rendersystem.Renderable.*;
-//import tage.scene.*;
-//import tage.scene.Camera.Frustum.*;
-//import tage.scene.controllers.RotationController;
-//import tage.util.BufferUtil;
-//import tage.util.Configuration;
-//import tage.rml.*;
-//import tage.rendersystem.gl4.GL4RenderSystem;
-//import tage.rendersystem.shader.GpuShaderProgram;
-//import tage.rendersystem.states.FrontFaceState;
-//import tage.rendersystem.states.RenderState;
-//import tage.rendersystem.states.TextureState;
-//import tage.networking.IGameConnection.ProtocolType;
-//import tage.physics.PhysicsEngine;
-//import tage.physics.PhysicsEngineFactory;
-//import tage.physics.PhysicsObject;
 import tage.input.*;
 
 import tage.physics.PhysicsEngine;
@@ -62,6 +30,8 @@ import tage.physics.JBullet.*;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.collision.dispatch.CollisionObject;
 
+import net.java.games.input.*;
+import tage.input.action.AbstractInputAction;
 
 //import java.util.UUID;
 //import java.util.Vector;
@@ -81,8 +51,6 @@ import javax.swing.JRadioButton;*/
 
 import org.joml.*;
 
-
-
 public class MyGame extends VariableFrameRateGame {
 
 	/*
@@ -93,14 +61,10 @@ public class MyGame extends VariableFrameRateGame {
 	private boolean isConnected;
 	private Vector<UUID> gameObjectsToRemove;
 	
-	public static boolean isTerrain;
-	
 	public IAudioManager audioMgr;
 	Sound backgroundMusic, stationSound, NPCSound;
 	static Sound laserFireSound;
 	Sound shipNoiseSound;
-	
-
 	
 	//Declaration area
 	Random random = new Random();
@@ -136,16 +100,12 @@ public class MyGame extends VariableFrameRateGame {
 	throttleDown controlTest2;
 	throttleLeft controlTest3;
 	throttleRight controlTest4;
-	destroyTerrain controlTest8;
 	
 	ToggleLights toggleLights;
 	
-	
-
 	private InputManager im;
 	private TextureManager tm;
 	private ThrottleController tc;
-	
 	
 	private float planetHeight = 1f;
 	private float speedScale = 4;
@@ -197,6 +157,9 @@ public class MyGame extends VariableFrameRateGame {
 
 	private float deltaTime, previousTime;
 	private int shipLives = 3;
+
+	private DestroyTerrain DT;
+	private ToggleLights TL;
 
 	public MyGame(){ super(); }
 
@@ -336,9 +299,7 @@ public class MyGame extends VariableFrameRateGame {
 		im = new InputManager();
 		playerController = new FlightController(this);
 		
-		//setupAdditionalTestControls(im);
-		
-		//animationThrottleUp()
+		setupAdditionalControls();
 	}
 
 	private void setupSceneObjects() throws IOException{
@@ -532,7 +493,6 @@ public class MyGame extends VariableFrameRateGame {
     	tessE.setTextureTiling(55, 155);
     	tessE.setMultiplier(5);
     	
-    	isTerrain = true;
     	
     	tessN.setLocalPosition(-200.0f, -50.0f, -45.0f);
 
@@ -691,8 +651,6 @@ public class MyGame extends VariableFrameRateGame {
 		
 		lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
 		
-		
-		
 		Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
 		headlight1.setConeCutoffAngle(Degreef.createFrom(10));
 		headlight1.setSpecular(Color.white);
@@ -752,7 +710,7 @@ public class MyGame extends VariableFrameRateGame {
 		//SceneNode dolphinN = sm.getRootSceneNode().createChildSceneNode(dolphinE.getName() + "Node");
 		shipN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
 
-		//TODO
+		//TODO Setup start locations
 		//set start location for this team
 		shipN.setLocalPosition(startPositionZero);
 		print("shipLocation: " + shipN.getLocalPosition());
@@ -945,59 +903,6 @@ public class MyGame extends VariableFrameRateGame {
 		hand.up(-0.5f);
 		hand.left(-0.7f);
 		hand.applyParentRotationToPosition(true);
-
-		/*//Right Hand
-    	SkeletalEntity rightHand = sm.createSkeletalEntity("rightHandAv", "MyFettHandVer5.rkm", "MyFettHandVer5.rks");
-    	
-    	Texture tex6 = sm.getTextureManager().getAssetByPath("FettArmVer5.png");
-    	TextureState tstate6 = (TextureState) sm.getRenderSystem()
-    	.createRenderState(RenderState.Type.TEXTURE);
-    	tstate6.setTexture(tex6);
-    	rightHand.setRenderState(tstate6);
-   	
-    	SceneNode rightHandN = sm.getRootSceneNode().createChildSceneNode("rightHandNode");
-    	rightHandN.attachObject(rightHand);
-    	float scale = 0.5f;
-    	rightHandN.scale(scale,scale,scale);//
-    	rightHandN.translate(-0.7f, -0.5f, 0);
-    		
-    		
-    			
-    	rightHand.loadAnimation("throttleUpAndBackAnimation", "ThrustUpAndBack.rka");
-    	rightHand.loadAnimation("throttleDownAndBackAnimation", "ThrustDownAndBack2.rka");
-    	rightHand.loadAnimation("throttleLeftAndBackAnimation", "ThrustLeftandBack.rka");
-    	rightHand.loadAnimation("throttleRightAndBackAnimation", "ThrustRightandBack.rka");
-    			
-    			
-    	rightHand.loadAnimation("throttleUpAndPause", "ThrustUpAndPause.rka");
-    	rightHand.loadAnimation("throttleDownAndPause", "ThrustDownAndPause.rka");
-    	rightHand.loadAnimation("throttleBackFromUp", "FromUp_GoDown_andPause.rka");
-    	rightHand.loadAnimation("throttleBackFromDown", "FromDown_GoUp_andPause.rka");
-    			
-    		
-    	shipN.attachChild(rightHandN);
-    	rightHandN.moveDown(0.5f);
-    			
-    			//AnimationStar
-    			
-    			SkeletalEntity movingStar = 
-    					sm.createSkeletalEntity("movingStar", "Object6.rkm", "Object6.rks");
-    			
-    	    	Texture tex8 = sm.getTextureManager().getAssetByPath("Object6.png");
-    	    	TextureState tstate8 = (TextureState) sm.getRenderSystem()
-    	    	.createRenderState(RenderState.Type.TEXTURE);
-    	    	tstate8.setTexture(tex8);
-    	   	movingStar.setRenderState(tstate8);
-    	   	
-        	SceneNode movingStarN =
-        			sm.getRootSceneNode().createChildSceneNode("movingStarNode");
-        	movingStarN.attachObject(movingStar);
-        	//movingStarN.scale(0.1f, 0.1f, 0.1f);//
-        	movingStarN.setLocalPosition(0.0f, 55f, 0.0f);
-        	
-        	movingStar.loadAnimation("Object6", "Object6.rka");
-        	
-        	movingStar.playAnimation("Object6", 0.5f, LOOP, 0);*/
 	}
 
 	private void animationUpdate(){
@@ -1011,8 +916,6 @@ public class MyGame extends VariableFrameRateGame {
 	private void setupLights() {
 		
 		lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
-		
-		
 		
 		Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
 		headlight1.setConeCutoffAngle(Degreef.createFrom(10));
@@ -1041,8 +944,6 @@ public class MyGame extends VariableFrameRateGame {
 		headlightNode1.setLocalPosition(-0.3f,0,0);
 		headlightNode3.setLocalPosition(0.3f,0,0);
 		
-		
-		
 		lightHolder.attachChild(headlightNode1);
 		
 		lightHolder.attachChild(headlightNode2);
@@ -1058,9 +959,7 @@ public class MyGame extends VariableFrameRateGame {
 	/*
 	//TODO NPC stuff
 	private void setupPatrolNPC(Engine eng, SceneManager sm) throws IOException{
-		
 		//SceneNode npc1 = nm.makeNPC("npc1");
-		
 		npcs = new PatrolEnemy[10];
 		
 		Vector3 position1 = Vector3f.createFrom(20,35,145);
@@ -1071,8 +970,6 @@ public class MyGame extends VariableFrameRateGame {
 		
 		Vector3 position3 = Vector3f.createFrom(-20,27,145);
 		npcs[2] = npcFactory("npcThree", position1);
-		
-		
 	}
 	
 	private PatrolEnemy npcFactory(String name, Vector3 position) throws IOException {
@@ -1090,36 +987,9 @@ public class MyGame extends VariableFrameRateGame {
 			}
 		}
 	}
-	
-	//TODO setup physics
-	private void setupPhysics() {
-		System.out.println("setupPhysics");
-		String engine = "ray.physics.JBullet.JBulletPhysicsEngine";
-		
-		physicsEng = PhysicsEngineFactory.createPhysicsEngine(engine);
-		physicsEng.initSystem();
-		
-		float mass = 1.0f;
-		float up[] = {0,1,0};
-		double[] temptf;
-		
-		temptf = toDoubleArray(shipN.getLocalTransform().toFloatArray());
-		PhysicsObject shipPhysicsObject = physicsEng.addSphereObject(physicsEng.nextUID(), mass, temptf, 1.0f);
-		shipN.setPhysicsObject(shipPhysicsObject);
-	}
+	*/
 
-	//TODO inputs and controls
-	//seperate methods for keyboards/gamepads
-	protected void setupInputs(SceneManager sm) throws IOException {
-		im = new GenericInputManager();
-		playerController = new FlightController(this, camera, camera.getParentSceneNode(), shipN, im, sm, physicsEng);
-		
-		setupAdditionalTestControls(im);
-		
-		//animationThrottleUp()
-	}
-	
-	private void setupAdditionalTestControls(InputManager im) {
+	private void setupAdditionalControls() {
 		ArrayList<Controller> controllers = im.getControllers();
 		ArrayList<String> keyboards = new ArrayList<String>();
 		
@@ -1128,32 +998,18 @@ public class MyGame extends VariableFrameRateGame {
 				keyboards.add(controllers.get(i).getName());
 		}
 		
-		controlTest = new throttleUp();
-		controlTest2 = new throttleDown();
-		controlTest3 = new throttleLeft();
-		controlTest4 = new throttleRight();
-		controlTest8 = new destroyTerrain();
-		
-		toggleLights = new ToggleLights();
+		DT = new DestroyTerrain();
+		TL = new ToggleLights();
 		
 		for (int i = 0; i < keyboards.size(); i++) {
-			
-			//im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.O, controlTest,
-			//		InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
-			//im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.P, controlTest2,
-			//		InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
-			//im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.K, controlTest3,
-			//		InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);
-			im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.L, toggleLights,
+			im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.L, TL,
 					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
-			im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.U, controlTest8,
+			im.associateAction(keyboards.get(i), net.java.games.input.Component.Identifier.Key.U, DT,
 					InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);
-			
 		}
 	}
-	
 
-	
+	/*
 	//TODO ghost avatar
 	public void setupGhostAvatar(GhostAvatar ghost, int team) throws IOException {
 		
@@ -1207,13 +1063,6 @@ public class MyGame extends VariableFrameRateGame {
 	public void update() {
 	//protected void update(Engine engine) {
 
-		
-		livesUpdate();
-		
-		//System.out.println("update");//
-		
-		updateDefaults(engine);
-		
 		processNetworking(engine.getElapsedTimeMillis());
 		
 		SceneManager sm = engine.getSceneManager();
@@ -1245,8 +1094,6 @@ public class MyGame extends VariableFrameRateGame {
 		
 		tc.update(deltaTime);
 		
-		
-	
 		SkeletalEntity rightHand = (SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
 		
 		rightHand.update();
@@ -1266,17 +1113,6 @@ public class MyGame extends VariableFrameRateGame {
 		laserFireSound.setLocation(shipN.getWorldPosition());
 		shipNoiseSound.setLocation(Object1N.getWorldPosition());
 		setEarParameters(sm);
-		
-		Matrix4 mat;
-		physicsEng.update(eng.getElapsedTimeMillis());
-		for (SceneNode s : engine.getSceneManager().getSceneNodes())
-		{ 
-			if (s.getPhysicsObject() != null){
-				mat = Matrix4f.createFrom(toFloatArray(s.getPhysicsObject().getTransform()));
-				s.setLocalPosition(mat.value(0,3),mat.value(1,3),
-				mat.value(2,3));
-			}
-		}
 	}
 	*/
 
@@ -1383,63 +1219,22 @@ public class MyGame extends VariableFrameRateGame {
 		handS.playAnimation("throttleBackFromDown", animationSpeed, AnimatedShape.EndType.PAUSE, 0);
 	}
 
-	/*
-	
-	
-	private class destroyTerrain extends AbstractInputAction {
+	private class DestroyTerrain extends AbstractInputAction {
 
 		@Override
 		public void performAction(float arg0, Event e) {
-			
-			SceneNode tessN = eng.getSceneManager().
-			getSceneNode("TessN");
-			
-			//tessN.setLocalPosition(8000.0f, 8000.0f, 8000.0f);
-			tessN.moveDown(10000);
+			terrain.up(-10000);
 		}
 	}
 
-	
-	private class throttleUp extends AbstractInputAction {
-				
-		@Override
-		public void performAction(float arg0, Event e) {
-			throttleUpAndBackAnimation();
-		}
-	}
-	
-	
-	private class throttleDown extends AbstractInputAction {
-		
-		@Override
-		public void performAction(float arg0, Event e) {
-			throttleDownAndPauseAnimation();
-		}
-	}
-	
-	private class throttleLeft extends AbstractInputAction {
-		
-		@Override
-		public void performAction(float arg0, Event e) {
-			throttleLeftAndBackAnimation();
-		}
-	}
-	
-	
-	private class throttleRight extends AbstractInputAction {
-		
-		@Override
-		public void performAction(float arg0, Event e) {
-			throttleRightAndBackAnimation();
-		}
-	}
-	
+	//TODO implement this hotkey
 	private class ToggleLights extends AbstractInputAction {
 		
 		private boolean on = true;
 		@Override
 		public void performAction(float arg0, Event e) {
-			if(on) {
+			print("Toggle Lights");
+			/*if(on) {
 				lightHolder.setLocalPosition(10000,10000,10000);
 				on=false;
 			}
@@ -1447,12 +1242,11 @@ public class MyGame extends VariableFrameRateGame {
 				lightHolder.setLocalPosition(0,0,0);
 				on=true;
 			}
+			*/
 		}
 	}
-	
 
-	
-	
+	/*
 	public void setEarParameters(SceneManager sm)
 	{ 
 		
@@ -1577,9 +1371,9 @@ public class MyGame extends VariableFrameRateGame {
 	}
 
 	private void physicsUpdate(){
-		//print("shit");
 		Matrix4f mat = new Matrix4f();
 		Matrix4f mat2 = new Matrix4f().identity();
+		//TODO check for collision
 		//checkForCollisions();
 		physicsEngine.update((float)diffTime);
 		for (GameObject go:engine.getSceneGraph().getGameObjects())

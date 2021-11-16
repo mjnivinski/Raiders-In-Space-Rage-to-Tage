@@ -12,6 +12,7 @@ import ray.rage.scene.Entity;
 import ray.rage.scene.SceneManager;
 import ray.rage.scene.SceneNode;
 
+//TODO maybe deprecated
 public class ShipHudMaker {
 
 	private SceneManager sm;

@@ -1,20 +1,7 @@
 package ris;
 
 import java.io.IOException;
-
 import tage.*;
-
-/*
-import static ray.rage.scene.SkeletalEntity.EndType.NONE;
-import ris.MyGame;
-import ray.rage.Engine;
-import ray.rage.asset.texture.Texture;
-import ray.rage.rendersystem.states.RenderState;
-import ray.rage.rendersystem.states.TextureState;
-import ray.rage.scene.SceneManager;
-import ray.rage.scene.SceneNode;
-import ray.rage.scene.SkeletalEntity;
-*/
 
 public class ThrottleController {
 	
@@ -29,7 +16,6 @@ public class ThrottleController {
 	public void update() {
 		lastThrottleSign = throttleSign;
 		throttleSign = game.getThrottleSign();
-		
 		
 		switch(throttleSign) {
 			case -1:
@@ -53,22 +39,3 @@ public class ThrottleController {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
