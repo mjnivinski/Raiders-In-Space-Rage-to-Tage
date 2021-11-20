@@ -1,7 +1,7 @@
 package RageServer;
 
 import java.io.IOException;
-import ray.networking.IGameConnection.ProtocolType;
+import tage.networking.IGameConnection.ProtocolType;
 
 public class NetworkingServer {
 	private GameServerUDP thisUDPServer;

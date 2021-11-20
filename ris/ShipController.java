@@ -1,23 +1,6 @@
 package ris;
 
-//import a3.SceneCreation.NodeMaker;
-//import a3.myGameEngine.SimpleMath;
-/*
-import ray.physics.PhysicsEngine;
-import ray.physics.PhysicsObject;
-import ray.rage.Engine;
-import ray.rage.scene.SceneManager;
-import ray.rage.scene.SceneNode;
-import ray.rage.scene.Tessellation;
-import ray.rml.Degreef;
-import ray.rml.Vector3;
-import ray.rml.Vector3f;
-import ris.MyGame;*/
-
 import tage.*;
-
-//import tage.rml.Vector3;
-
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 import tage.physics.PhysicsEngineFactory;
@@ -134,21 +117,15 @@ public class ShipController {
 		
 		throttleBase.setLocalLocation(position);
 		
-		print("throttleBase.getLocalLocation(): " + throttleBase.getLocalLocation());
-		
-		for(int i=0; i<throttleIndicator.length;i++) {
-			
+		for(int i=0; i<throttleIndicator.length;i++)
+		{
 			throttlePositions[i] = throttleIndicator[i].getLocalLocation();
-			//throttleBase.attachChild(throttleIndicator[i]);
 			throttleIndicator[i].setParent(throttleBase);
 		}
-		//throttleBase.setLocalLocation(throttleBase.getLocalLocation().add(new Vector3f(1000f,1000f,1000f)));
-		
 	}
 	
 	private void setupParams() {
 		pitchRate = (float)(double)jsEngine.get("pitchRate");
-		
 		pitchRate = (float)(double)jsEngine.get("pitchRate");
 		pitchAccel = (float)(double)jsEngine.get("pitchAccel");
 		rollRate = (float)(double)jsEngine.get("rollRate");
@@ -198,10 +175,6 @@ public class ShipController {
 	public void update() {
 		deltaTime = game.getDeltaTime();
 		
-		//throttleBase.pitch(Degreef.createFrom(10 * deltaTime));
-		
-		
-		
 		long modTime = paramFile.lastModified();
 		if (modTime > fileLastModifiedTime)
 		{
@@ -219,6 +192,7 @@ public class ShipController {
 		
 		updatePosition();
 		
+		//TODO undo this so the ship can shoot again
 		shooting();
 	}
 	
@@ -246,6 +220,7 @@ public class ShipController {
 	}
 	
 	private void updatePosition() {
+		//System.out.println("updatePosition()");
 		//System.out.println(ship.getWorldLocation());
 		//Vector3 direction = ship.getWorldForwardAxis();
 		Vector3f direction = ship.getWorldForwardVector();
@@ -257,12 +232,6 @@ public class ShipController {
 		float[] velocities = new float[] {direction.x(),direction.y(),direction.z()};
 		shipPhys.setLinearVelocity(velocities);
 		
-		//TODO what is this? ground stuff??
-		/*
-		SceneNode tessN =
-				eng.getSceneManager().
-				getSceneNode("TessN");
-		*/
 		updateVerticalPosition();
 	}
 	
@@ -270,29 +239,17 @@ public class ShipController {
 	float shipHeight;
 	//float heightDifference;
 	public void updateVerticalPosition()
-	{ 
-		//TODO figure out how to get the vertical height at the ships X,Z position
-		//get Tesselation and the vertical height at the ships X,Z position
-		/*
-		SceneNode tessN = eng.getSceneManager().getSceneNode("TessN");
-		Tessellation tessE = ((Tessellation) tessN.getAttachedObject("tessE"));
-		terrainHeight = tessE.getWorldHeight(ship.getWorldPosition().x(), ship.getWorldPosition().z()) + 10f;
+	{
+		Vector3f position = ship.getWorldLocation();
+		terrainHeight = game.getTerrain().getHeight(position.x(), position.z()) + game.getTerrain().getWorldLocation().y() + 15;
 		
-		//ship height to compare
-		shipHeight = ship.getWorldPosition().y();
-		
-		//if the ship is below shift it up
+		shipHeight = position.y();
+
 		if(terrainHeight > shipHeight) {
-			
 			double[] transform = shipPhys.getTransform();
-			
-			
-			
 			transform[13] = (double)terrainHeight;
-			
 			shipPhys.setTransform(transform);
 		}
-		*/
 	}
 	
 	private void pitch() {
@@ -326,6 +283,8 @@ public class ShipController {
 		if(throttle > 1) throttle = 1;
 		if(throttle < 0.01f) throttle = 0.001f;
 		//TODO completely unecessary thing to investigate, why does the ship move if it gets set to 0?
+		//It's because we use the current speed to calculate the next speed (only with multiplication)
+		//So it needs to be able to accelerate from 0
 		//if(throttle < 0f) throttle = 0f;
 	}
 	
@@ -390,18 +349,13 @@ public class ShipController {
 		shootCycle += 2;
 		shootCycle%=(lasers.length);
 		
-		//TODO sound and networking
-		//ris.MyGame.playFireSound();
-		//game.shootNetworking();
+		game.playFireSound();
+
+		game.shootNetworking();
 	}
 	
 	public int getThrottleSign() {
 		float value = keyVsGamepad(throttleUp, throttleDown, controllerThrottle);
-		//System.out.println("controllerThrottle: " + controllerThrottle);
-		//System.out.println("throttleUp: " + throttleUp);
-		//System.out.println("throttleDown: " + throttleDown);
-		
-		//System.out.println("value: " + value);
 		
 		throttle+= throttleAccel * value * deltaTime;
 		
@@ -414,7 +368,6 @@ public class ShipController {
 		else if (value < 0) valueInt = -1;
 		else valueInt = 0;
 		
-		//System.out.println("valueInt: " + valueInt);
 		return valueInt;
 	}
 	

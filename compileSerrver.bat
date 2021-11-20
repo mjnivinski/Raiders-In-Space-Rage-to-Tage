@@ -1,1 +1,2 @@
 javac RageServer\*.java
+PAUSE

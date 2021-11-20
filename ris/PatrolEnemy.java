@@ -2,9 +2,10 @@ package ris;
 
 import java.io.IOException;
 
-import ris.MyGame;
+//import ris.MyGame;
 //import a3.SceneCreation.NodeMaker;
 //import a3.myGameEngine.VectorMath;
+/*
 import ray.ai.behaviortrees.BTAction;
 import ray.ai.behaviortrees.BTCompositeType;
 import ray.ai.behaviortrees.BTSelector;
@@ -17,12 +18,18 @@ import ray.rage.Engine;
 import ray.rage.scene.SceneManager;
 import ray.rage.scene.SceneNode;
 import ray.rml.Vector3;
+*/
+
+import tage.*;
+import tage.ai.behaviortrees.*;
+
+import org.joml.*;
 
 //controls a Node that orbits a position and then chases enemies until too far away from defense position or enemy too far away.
 
 public class PatrolEnemy {
 	
-	MyGame g;
+	MyGame game;
 	NodeMaker nm;
 	BehaviorTree bt = new BehaviorTree(BTCompositeType.SELECTOR);
 		
@@ -43,50 +50,24 @@ public class PatrolEnemy {
 	boolean returning = false;
 	boolean chasing = false;
 	
-	SceneNode[] possibleTargets;
-	SceneNode[] lasers;
+	//SceneNode[] possibleTargets;
+	GameObject[] possibleTargets;
+	//SceneNode[] lasers;
+	GameObject[] lasers;
 		
-	SceneNode npc;
-	SceneNode target; //might replace with a position to guard
-	
+	//SceneNode npc;
+	GameObject npc;
+	//SceneNode target; //might replace with a position to guard
+	GameObject target; //might replace with a position to guard
 	
 	PatrolStrategyContext context;
 	
-	/*
-	//construct with default values
-	public PatrolEnemy(SceneNode n, SceneNode t, MyGame g) throws IOException {
-		this.g = g;
+	//public PatrolEnemy(SceneNode n, MyGame g, Vector3 p) throws IOException {
+	public PatrolEnemy(GameObject n, MyGame g, Vector3f p) throws IOException {
+		game = g;
 		npc = n;
-		target = t;
-		
-		nm = new NodeMaker(g.getEngine(), g.getSceneManager(), g.getPhysicsEngine());
-		
-		getLasers();
-		context = new PatrolStrategyContext(this, n, t, radius, defenseTether, enemyTether, lasers);
-		setupBehaviorTree();
-	}
-	
-	//construct with custom radius/tether values
-	public PatrolEnemy(SceneNode n, SceneNode t, MyGame g, float r, float dT, float eT) throws IOException {
-		this.g = g;
-		npc = n;
-		target = t;
-		
-		nm = new NodeMaker(g.getEngine(), g.getSceneManager(), g.getPhysicsEngine());
-		
-		radius = r;
-		defenseTether = dT;
-		enemyTether = eT;
-		getLasers();
-		context = new PatrolStrategyContext(this, n, t, r, dT, eT, lasers);
-		setupBehaviorTree();
-	}*/
-	
-	
-	public PatrolEnemy(SceneNode n, MyGame g, Vector3 p) throws IOException {
-		this.g = g;
-		npc = n;
-		nm = new NodeMaker(g.getEngine(),g.getSceneManager(),g.getPhysicsEngine());
+		//nm = new NodeMaker(g.getEngine(),g.getSceneManager(),g.getPhysicsEngine());
+		nm = game.getNodeMaker();
 		setupPE();
 		context = new PatrolStrategyContext(this,n,p,lasers);
 		
@@ -99,12 +80,14 @@ public class PatrolEnemy {
 	
 	
 	public void getLasers() throws IOException {
-		lasers = nm.makeNPCLasers(npc.getName());
+		//lasers = nm.makeNPCLasers(npc.getName());
+		lasers = nm.makeNPCLasers();
 	}
 	
 	public void update(float time) {
 		float deltaTime = time/1000;
-		context.execute(deltaTime);
+		//context.execute(deltaTime);
+		context.execute(time);
 		bt.update(time);
 		//context.execute(deltaTime);
 		
@@ -116,7 +99,7 @@ public class PatrolEnemy {
 		bt.insert(10, new BTSequence(11));
 		bt.insert(11, new ReturnCheck(false));//condition
 		bt.insert(11, new ReturnAction());   //action
-			
+		
 		bt.insert(10, new BTSequence(12));
 		bt.insert(12, new ChaseCheck(false));//condition
 		bt.insert(12,  new ChaseAction());  //action
@@ -126,7 +109,8 @@ public class PatrolEnemy {
 		bt.insert(13, new PatrolAction());   //action
 	}
 	
-	public void setTargets(SceneNode[] targets) {
+	//public void setTargets(SceneNode[] targets) {
+	public void setTargets(GameObject[] targets) {
 		possibleTargets = targets;
 	}
 		
@@ -203,7 +187,7 @@ public class PatrolEnemy {
 		chasing = false;
 		returning = true;
 		context.returnHome();
-		g.hit();
+		game.hit();
 	}
 	
 	private class PatrolCheck extends BTCondition{
@@ -232,10 +216,12 @@ public class PatrolEnemy {
 			//check if an enemy is within range to begin chasing
 			//System.out.println("patrol Action");
 			
-			for(SceneNode target:possibleTargets) {
-				if(VectorMath.distance(target.getWorldPosition(), npc.getWorldPosition()) < enemyTether) {
+			//for(SceneNode target:possibleTargets) {
+			for(GameObject target:possibleTargets) {
+				//if(VectorMath.distance(target.getWorldPosition(), npc.getWorldPosition()) < enemyTether) {
+				if(VectorMath.distance(target.getWorldLocation(), npc.getWorldLocation()) < enemyTether) {
 					context.chaseEnemy(target);
-					print("FUCKING CHASING");
+					print("CHASING");
 					chasing = true;
 					return BTStatus.BH_SUCCESS;
 				}

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.UUID;
 
-import ray.networking.server.GameConnectionServer;
-import ray.networking.server.IClientInfo;
+import tage.networking.server.GameConnectionServer;
+import tage.networking.server.IClientInfo;
 
 public class GameServerUDP extends GameConnectionServer<UUID> {
 	
@@ -15,7 +15,6 @@ public class GameServerUDP extends GameConnectionServer<UUID> {
 	
 	@Override
 	public void processPacket(Object o, InetAddress senderIP, int senderPort) {
-		
 		String message = (String)o;
 		
 		String[] msgTokens = message.split(",");

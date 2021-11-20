@@ -4,11 +4,18 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.UUID;
 import java.util.Vector;
+import java.lang.*;
 
-import ris.MyGame;
+/*import ris.MyGame;
 import ray.networking.client.GameConnectionClient;
 import ray.rml.Vector3;
 import ray.rml.Vector3f;
+*/
+
+import tage.networking.*;
+import tage.networking.client.GameConnectionClient;
+
+import org.joml.*;
 
 public class ProtocolClient extends GameConnectionClient {
 	private MyGame game;
@@ -20,8 +27,6 @@ public class ProtocolClient extends GameConnectionClient {
 		this.game = game;
 		this.id = UUID.randomUUID();
 		this.ghostAvatars = new Vector<GhostAvatar>();
-		
-		
 	}
 
 	private void print(String s) {
@@ -60,8 +65,11 @@ public class ProtocolClient extends GameConnectionClient {
 
 				// format create,remoteid,x,y,z or dsfr,remoteid,x,y,z
 				UUID ghostID = UUID.fromString(msgTokens[1]);
-				Vector3 ghostPosition = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
-				Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				//Vector3 ghostPosition = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				//Vector3f ghostPosition = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				Vector3f ghostPosition = new Vector3f(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				//Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				Vector3f linear = new Vector3f(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
 
 				try {
 					updateGhost(ghostID, ghostPosition, linear);
@@ -75,8 +83,10 @@ public class ProtocolClient extends GameConnectionClient {
 				System.out.println("create message recieved");
 				
 				UUID ghostId = UUID.fromString(msgTokens[1]);
-				Vector3 ghostPosition = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
-				Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				//Vector3 ghostPosition = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				Vector3f ghostPosition = new Vector3f(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				//Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				Vector3f linear = new Vector3f(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
 				int team = (int) Float.parseFloat(msgTokens[8]);
 				
 				try {
@@ -90,16 +100,20 @@ public class ProtocolClient extends GameConnectionClient {
 														// local status update
 				// format should be "wants,clientID"
 				UUID remID = UUID.fromString(msgTokens[1]);
-				Vector3 pos = game.getPlayerPosition();
-				Vector3 linear = game.getPlayerDirection();
+				//Vector3 pos = game.getPlayerPosition();
+				Vector3f pos = game.getPlayerPosition();
+				//Vector3 linear = game.getPlayerDirection();
+				Vector3f linear = game.getPlayerDirection();
 				sendDetailsForMessage(remID, pos, linear);
 			}
 
 			if (msgTokens[0].compareTo("move") == 0) { // Received "move" informs client of a change in status of a
 														// remote avatar
 				UUID remID = UUID.fromString(msgTokens[1]);
-				Vector3 pos = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
-				Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				//Vector3 pos = Vector3f.createFrom(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				Vector3f pos = new Vector3f(Float.parseFloat(msgTokens[2]), Float.parseFloat(msgTokens[3]), Float.parseFloat(msgTokens[4]));
+				//Vector3 linear = Vector3f.createFrom(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
+				Vector3f linear = new Vector3f(Float.parseFloat(msgTokens[5]), Float.parseFloat(msgTokens[6]), Float.parseFloat(msgTokens[7]));
 				try {
 					updateGhost(remID, pos, linear);
 				} catch (IOException e) {
@@ -133,7 +147,8 @@ public class ProtocolClient extends GameConnectionClient {
 		}
 	}
 
-	public void sendCreateMessage(Vector3 pos, Vector3 linear, int team) {
+	//public void sendCreateMessage(Vector3 pos, Vector3 linear, int team) {
+	public void sendCreateMessage(Vector3f pos, Vector3f linear, int team) {
 		System.out.println("send create message");
 		// format: create,localid,x,y,z
 		try {
@@ -147,7 +162,8 @@ public class ProtocolClient extends GameConnectionClient {
 		}
 	}
 
-	public void sendMoveMessage(Vector3 pos, Vector3 linear) {
+	//public void sendMoveMessage(Vector3 pos, Vector3 linear) {
+	public void sendMoveMessage(Vector3f pos, Vector3f linear) {
 
 		try {
 			String message = new String("move," + id.toString());
@@ -159,7 +175,8 @@ public class ProtocolClient extends GameConnectionClient {
 		}
 	}
 
-	public void sendDetailsForMessage(UUID remID, Vector3 pos, Vector3 linear) {
+	//public void sendDetailsForMessage(UUID remID, Vector3 pos, Vector3 linear) {
+	public void sendDetailsForMessage(UUID remID, Vector3f pos, Vector3f linear) {
 		try {
 			String message = new String("dsfr," + remID.toString());
 			message += "," + pos.x() + "," + pos.y() + "," + pos.z();
@@ -177,7 +194,8 @@ public class ProtocolClient extends GameConnectionClient {
 		} catch (IOException e) { e.printStackTrace(); }
 	}
 
-	public void createGhostAvatar(UUID ghostID, Vector3 ghostPosition, Vector3 linear, int team) throws IOException {
+	//public void createGhostAvatar(UUID ghostID, Vector3 ghostPosition, Vector3 linear, int team) throws IOException {
+	public void createGhostAvatar(UUID ghostID, Vector3f ghostPosition, Vector3f linear, int team) throws IOException {
 		GhostAvatar gh = new GhostAvatar(game, ghostID, ghostPosition, linear, team);
 		ghostAvatars.add(gh);
 		game.setupGhostAvatar(gh, team);
@@ -196,7 +214,8 @@ public class ProtocolClient extends GameConnectionClient {
 		return -1;
 	}
 
-	public void updateGhost(UUID ghostID, Vector3 pos, Vector3 linear) throws IOException {
+	//public void updateGhost(UUID ghostID, Vector3 pos, Vector3 linear) throws IOException {
+	public void updateGhost(UUID ghostID, Vector3f pos, Vector3f linear) throws IOException {
 		// has a remote id ghost and its new position
 
 		// use lookupGhost to get index location in ghostAvatars Vector

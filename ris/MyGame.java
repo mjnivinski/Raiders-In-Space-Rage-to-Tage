@@ -20,6 +20,9 @@ import tage.*;
 import tage.shapes.*;
 import tage.nodeControllers.*;
 import tage.Light;
+import tage.audio.*;
+
+import tage.networking.*;
 
 import tage.input.*;
 
@@ -32,6 +35,17 @@ import com.bulletphysics.collision.dispatch.CollisionObject;
 
 import net.java.games.input.*;
 import tage.input.action.AbstractInputAction;
+
+import java.io.*;
+import java.util.*;
+import java.util.UUID;
+import java.net.InetAddress;
+
+import java.net.UnknownHostException;
+
+import net.java.games.input.*;
+import net.java.games.input.Component.Identifier.*;
+import tage.networking.IGameConnection.ProtocolType;
 
 //import java.util.UUID;
 //import java.util.Vector;
@@ -61,7 +75,7 @@ public class MyGame extends VariableFrameRateGame {
 	private boolean isConnected;
 	private Vector<UUID> gameObjectsToRemove;
 	
-	public IAudioManager audioMgr;
+	
 	Sound backgroundMusic, stationSound, NPCSound;
 	static Sound laserFireSound;
 	Sound shipNoiseSound;
@@ -116,6 +130,14 @@ public class MyGame extends VariableFrameRateGame {
 	
 	private PatrolEnemy[] npcs;
 	*/
+	private boolean isOnline;
+	private String serverAddress;
+	private int serverPort;
+	private ProtocolType serverProtocol;
+	private ProtocolClient protClient;
+	private boolean isConnected;
+	private Vector<UUID> gameObjectsToRemove;
+
 	private FlightController playerController;
 
 	private PhysicsEngine physicsEngine;
@@ -136,10 +158,10 @@ public class MyGame extends VariableFrameRateGame {
 	private PhysicsObject shipPhysObj;
 
 	private ObjShape asteroidM, cockpitGreyS, cockpitBlueS, blueShipS, laserS, throttleS, scoreS, npcS,
-					 asteroid1S, asteroid2S;
+					 asteroid1S, asteroid2S, earthS;
 	
 	private TextureImage stuff, things, cockpitBlueT, blueShipT, laserT, throttleT, scoreT, npcT,
-					 asteroid1T, asteroid2T;
+					 asteroid1T, asteroid2T, earthT;
 	private ObjShape terrainS;
 	private TextureImage terrainT, terrainHM;
 
@@ -161,31 +183,35 @@ public class MyGame extends VariableFrameRateGame {
 	private DestroyTerrain DT;
 	private ToggleLights TL;
 
-	public MyGame(){ super(); }
+	private IAudioManager audioMgr;
+	private Sound backgroundMusic, stationSound, NPCSound, laserFireSound, shipNoiseSound;
+
+	public MyGame(){
+		super();
+		isOnline = false;
+	}
+
+	public MyGame(String serverAddr, int sPort) {
+		super();
+		this.serverAddress = serverAddr;
+		this.serverPort = sPort;
+		this.serverProtocol = ProtocolType.UDP;
+		isOnline = true;
+	}
 
 	public static void main(String[] args){
-		MyGame game = new MyGame();
+		MyGame game;
+		if(args.length > 0){
+			game = new MyGame(args[0], Integer.parseInt(args[1]));
+		}
+		else{
+			game = new MyGame();
+		}
 		System.out.println("main");
 
 		engine = new Engine(game,1400,1000);
 		game.initializeSystem();
 		game.game_loop();
-		/*System.out.println("args: " + args[0] + " " + args[1]);
-		Game game = new MyGame(args[0], Integer.parseInt(args[1]));
-		//Game game = new MyGame("yes", 5);
-		
-		FSEM();
-		chooseTeam();
-		
-		try {
-			game.startup();
-			game.run();
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-		} finally {
-			game.shutdown();
-			game.exit();
-		}*/
 	}
 
 	//faster than typing System.out.println();
@@ -203,8 +229,9 @@ public class MyGame extends VariableFrameRateGame {
 		npcS = new ImportedModel("DropShipVer4.obj");
 		asteroid1S = new ImportedModel("Asteroid1.obj");
 		asteroid2S = new ImportedModel("Asteroid2.obj");
-		terrainS = new TerrainPlane();
 		handS = new AnimatedShape("MyFettHandVer5.rkm", "MyFettHandVer5.rks");
+		earthS = new Sphere();
+		terrainS = new TerrainPlane();
 	}
 
 	public void loadTextures(){
@@ -216,12 +243,17 @@ public class MyGame extends VariableFrameRateGame {
 		npcT = new TextureImage("DropShipVer4.png");
 		asteroid1T = new TextureImage("Object3.png");
 		asteroid2T = new TextureImage("Object4.png");
+		handT = new TextureImage("FettArmVer5.png");
 		terrainT = new TextureImage("carpet.png");
 		terrainHM = new TextureImage("scribble.jpg");
-		handT = new TextureImage("FettArmVer5.png");
+		earthT = new TextureImage("earth.jpg");
 	}
 
 	public void buildObjects(){
+
+		GameObject earth = new GameObject(GameObject.root(), earthS, earthT);
+		//0earth.setHeightMap(terrainHM);
+
 		Matrix4f initialTranslation, initialRotation, initialScale;
 
 		shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
@@ -229,8 +261,8 @@ public class MyGame extends VariableFrameRateGame {
 		//shipObj = new GameObject(GameObject.root());
 		//shipObj = new GameObject(GameObject.root(), null, cockpitBlueT);
 
-		tempShip = new GameObject(GameObject.root(), blueShipS, blueShipT);
-		tempShip.setLocalLocation(tempShip.getLocalLocation().add(new Vector3f(10,0,0)));
+		//tempShip = new GameObject(GameObject.root(), blueShipS, blueShipT);
+		//tempShip.setLocalLocation(tempShip.getLocalLocation().add(new Vector3f(10,0,0)));
 
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(1f);
@@ -242,6 +274,7 @@ public class MyGame extends VariableFrameRateGame {
 	}
 	
 	public void initializeGame() {
+		sceneGraph = getSceneGraph();
 		print("initializeGame");
 		Light.setGlobalAmbient(0.5f,0.5f,0.5f);
 		light1 = new Light();
@@ -293,8 +326,6 @@ public class MyGame extends VariableFrameRateGame {
 		shipObj.setPhysicsObject(shipPhysObj);
 	}
 
-	//TODO inputs and controls ,still need to destroy terrain and toggle lights
-	//seperate methods for keyboards/gamepads
 	protected void setupInputs() throws IOException {
 		im = new InputManager();
 		playerController = new FlightController(this);
@@ -303,12 +334,16 @@ public class MyGame extends VariableFrameRateGame {
 	}
 
 	private void setupSceneObjects() throws IOException{
+		print("setupSceneObjects");
 		asteroids = nm.makeAsteroids();
+		setupPatrolNPC();
 		setupScoreIndicator();
 		setupLights();
 		setupTerrain();
 		setupAnimations();
 		throttleController = new ThrottleController(this);
+		//setupAudio();
+		setupNetworking();
 	}
 
 	public void update() {
@@ -317,39 +352,15 @@ public class MyGame extends VariableFrameRateGame {
 		im.update(deltaTime);
 		physicsUpdate();
 		playerController.update();
-		//updateLights();
+		updateLights();
 		animationUpdate();
-	}
-
-	/*
-	public MyGame(String serverAddr, int sPort) {
-		super();
-		this.serverAddress = serverAddr;
-		this.serverPort = sPort;
-		this.serverProtocol = ProtocolType.UDP;
-	}
-
-	//TODO Main, setup networking, windows
-	public static void main(String[] args) {
-		System.out.println("args: " + args[0] + " " + args[1]);
-		Game game = new MyGame(args[0], Integer.parseInt(args[1]));
-		//Game game = new MyGame("yes", 5);
-		
-		FSEM();
-		chooseTeam();
-		
-		try {
-			game.startup();
-			game.run();
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-		} finally {
-			game.shutdown();
-			game.exit();
-		}
+		//audioUpdate();
+		//npcUpdates();
+		processNetworking();
 	}
 	
 	private void setupNetworking() {
+		if(!isOnline) return;
 		print("setupNetworking");
 		gameObjectsToRemove = new Vector<UUID>();
 		
@@ -372,426 +383,84 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 	
-	static int chooseTeam;
-	private static void chooseTeam() {
-		chooseTeam = JOptionPane.showConfirmDialog(null,  "Join Grey Team? (No Joins Blue Team)", "Blue", JOptionPane.YES_NO_OPTION);
-		//0 is yes
-		//1 is no
-		System.out.println("chooseTeam: " + chooseTeam);
-	}
-	
-	//TODO Ship selection
-	private void selectShip() throws IOException {
-		if(chooseTeam == 0) {
-			makePlayerGrey();
+	float networkTimer = 0;
+	float tickRate = 100;
+	private void processNetworking() {
+		if(!isOnline) return;
+
+		networkTimer += deltaTime;
+		
+		if(protClient.hitUpdate()) {
+			hit();
+			shipLives--;
 		}
-		else {
-			makePlayerBlue();
+		
+		if(networkTimer > 1/tickRate) {
+			networkTimer = 0;
+			protClient.sendMoveMessage(getPlayerPosition(), getPlayerDirection());
+		}
+		
+		if(protClient!=null) {
+			protClient.processPackets();
 		}
 	}
+	
 
-
-	//TODO various scene setup
-	@Override
-	protected void setupScene(Engine eng, SceneManager sm) throws IOException {
-		this.sm = sm;
-		this.eng = eng;
-		eMaker = new EntityMaker(eng,sm);
+	PatrolEnemy[] patrolEnemies;
+	private void setupPatrolNPC() throws IOException{
+		patrolEnemies = new PatrolEnemy[10];
 		
-		print("Setup Scene");
-		setupShip();
-			
-		createAnimations(sm);
-			    	
-		setupNetworking();
+		Vector3f position1 = new Vector3f(20,35,145);
+		patrolEnemies[0] = npcFactory(position1);
 		
-		nm = new NodeMaker(eng, sm, physicsEng);
-		setupPatrolNPC(eng,sm);
-		setupInputs(sm);
-		sm.getAmbientLight().setIntensity(new Color(.1f, .1f, .1f));
-
-		initAudio(sm);
+		Vector3f position2 = new Vector3f(0,27,145);
+		//patrolEnemies[1] = npcFactory(position2);
 		
-		tc = new ThrottleController(sm,eng,this,shipN);
-		setupLights();
-		setupScoreIndicator();
-		
-		print("setup done");
+		Vector3f position3 = new Vector3f(-20,27,145);
+		//patrolEnemies[2] = npcFactory(position3);
 	}
 	
-	//TODO animation setup
-	private void createAnimations(SceneManager sm) throws IOException {
- 
-		//Right Hand
-    	SkeletalEntity rightHand = sm.createSkeletalEntity("rightHandAv", "MyFettHandVer5.rkm", "MyFettHandVer5.rks");
-    	
-    	Texture tex6 = sm.getTextureManager().getAssetByPath("FettArmVer5.png");
-    	TextureState tstate6 = (TextureState) sm.getRenderSystem()
-    	.createRenderState(RenderState.Type.TEXTURE);
-    	tstate6.setTexture(tex6);
-    	rightHand.setRenderState(tstate6);
-   	
-    	SceneNode rightHandN = sm.getRootSceneNode().createChildSceneNode("rightHandNode");
-    	rightHandN.attachObject(rightHand);
-    	float scale = 0.5f;
-    	rightHandN.scale(scale,scale,scale);//
-    	rightHandN.translate(-0.7f, -0.5f, 0);
-    		
-    		
-    			
-    	rightHand.loadAnimation("throttleUpAndBackAnimation", "ThrustUpAndBack.rka");
-    	rightHand.loadAnimation("throttleDownAndBackAnimation", "ThrustDownAndBack2.rka");
-    	rightHand.loadAnimation("throttleLeftAndBackAnimation", "ThrustLeftandBack.rka");
-    	rightHand.loadAnimation("throttleRightAndBackAnimation", "ThrustRightandBack.rka");
-    			
-    			
-    	rightHand.loadAnimation("throttleUpAndPause", "ThrustUpAndPause.rka");
-    	rightHand.loadAnimation("throttleDownAndPause", "ThrustDownAndPause.rka");
-    	rightHand.loadAnimation("throttleBackFromUp", "FromUp_GoDown_andPause.rka");
-    	rightHand.loadAnimation("throttleBackFromDown", "FromDown_GoUp_andPause.rka");
-    			
-    		
-    	shipN.attachChild(rightHandN);
-    	rightHandN.moveDown(0.5f);
-    			
-    			//AnimationStar
-    			
-    			SkeletalEntity movingStar = 
-    					sm.createSkeletalEntity("movingStar", "Object6.rkm", "Object6.rks");
-    			
-    	    	Texture tex8 = sm.getTextureManager().getAssetByPath("Object6.png");
-    	    	TextureState tstate8 = (TextureState) sm.getRenderSystem()
-    	    	.createRenderState(RenderState.Type.TEXTURE);
-    	    	tstate8.setTexture(tex8);
-    	   	movingStar.setRenderState(tstate8);
-    	   	
-        	SceneNode movingStarN =
-        			sm.getRootSceneNode().createChildSceneNode("movingStarNode");
-        	movingStarN.attachObject(movingStar);
-        	//movingStarN.scale(0.1f, 0.1f, 0.1f);//
-        	movingStarN.setLocalPosition(0.0f, 55f, 0.0f);
-        	
-        	movingStar.loadAnimation("Object6", "Object6.rka");
-        	
-        	movingStar.playAnimation("Object6", 0.5f, LOOP, 0);
-		
-	}
-
-	//TODO create all nodes
-	private void createAllNodes(SceneManager sm) throws IOException {
-	  	Tessellation tessE = sm.createTessellation("tessE", 7);
-    	tessE.setSubdivisions(8f);
-    	SceneNode tessN =
-    	sm.getRootSceneNode().
-	    	createChildSceneNode("TessN");
-    	tessN.attachObject(tessE);
-    	tessN.translate(Vector3f.createFrom(-6.2f, -2.2f, 3.2f));
-    	// tessN.yaw(Degreef.createFrom(37.2f));
-    	tessN.scale(2000, 956, 2000);
-    	tessE.setHeightMap(this.getEngine(), "scribble.jpg");
-    	tessE.setTexture(this.getEngine(), "carpet.png");
-    	tessE.setTextureTiling(55, 155);
-    	tessE.setMultiplier(5);
-    	
-    	
-    	tessN.setLocalPosition(-200.0f, -50.0f, -45.0f);
-
-    	
-    	Entity stationE = sm.createEntity("station", "SpaceStationAlpha-b.obj");
-    	stationE.setPrimitive(Primitive.TRIANGLES);
-		stationN = sm.getRootSceneNode().createChildSceneNode("stationNode");
-		stationN.moveBackward(60.0f);
-		stationN.moveUp(25f);
-		stationN.moveLeft(4f);
-		stationN.attachObject(stationE);
-		stationN.moveUp(10);
-		
-		print("stationN: " + stationN.getWorldPosition());
-		
-		RotationController rc2 =
-		    	new RotationController(Vector3f.createUnitVectorY(), .03f);
-		    	rc2.addNode(stationN);
-		    	sm.addController(rc2);
-		    	
-		    	Entity Object2bE = sm.createEntity("object2b", "Object2.obj");
-		    	Object2bE.setPrimitive(Primitive.TRIANGLES);
-		    	Object2bN = sm.getRootSceneNode().createChildSceneNode(Object2bE.getName() + "Node");
-		    	Object2bN.moveBackward(80.0f);
-		    	Object2bN.moveUp(25f);
-		    	Object2bN.moveLeft(4f);
-		    	Object2bN.attachObject(Object2bE);
-		    	
-		    	//
-		    	Entity stationBlueE = sm.createEntity("stationBlue", "SpaceStationAlpha-b.obj");
-		    	stationBlueE.setPrimitive(Primitive.TRIANGLES);
-		    	stationBlueN = sm.getRootSceneNode().createChildSceneNode(stationBlueE.getName() + "Node");
-		    	stationBlueN.moveForward(350.0f);
-		    	stationBlueN.moveUp(25f);
-		    	stationBlueN.moveLeft(4f);
-		    	stationBlueN.attachObject(stationBlueE);
-		    	
-		    	print("stationBlueN: " + stationBlueN.getWorldPosition());//fd
-				
-				
-				RotationController rc4 =
-				    	new RotationController(Vector3f.createUnitVectorY(), .03f);
-				    	rc4.addNode(stationBlueN);
-				    	sm.addController(rc4);
-				    	
-				    	Entity Object2E = sm.createEntity("object2", "Object2.obj");
-				    	Object2E.setPrimitive(Primitive.TRIANGLES);
-				    	Object2N = sm.getRootSceneNode().createChildSceneNode(Object2E.getName() + "Node");
-				    	Object2N.moveForward(370.0f);
-				    	Object2N.moveUp(25f);
-				    	Object2N.moveRight(4f);
-				    	Object2N.attachObject(Object2E);
-				    	
-				    	
-					      TextureManager tm = eng.getTextureManager();
-					        Texture blueTexture = tm.getAssetByPath("stationBlue.png");
-					        RenderSystem rs = sm.getRenderSystem();
-					        TextureState state = (TextureState)rs.createRenderState(RenderState.Type.TEXTURE);
-					        state.setTexture(blueTexture);
-					        stationBlueE.setRenderState(state);
-		    	
-		    	
-					        //here though
-		    	Entity Object3E = sm.createEntity("object3", "Object3.obj");
-		    	Object3E.setPrimitive(Primitive.TRIANGLES);
-		    	Object3N = sm.getRootSceneNode().createChildSceneNode(Object3E.getName() + "Node");
-		    	Object3N.moveForward(100.0f);
-		    	Object3N.moveUp(72f);
-		    	Object3N.moveRight(300f);
-		    	Object3N.setLocalScale(20, 20, 20);
-		    	Object3N.attachObject(Object3E);
-				
-				
-				RotationController rc3 =
-				    	new RotationController(Vector3f.createUnitVectorY(), .01f);
-				    	rc3.addNode(Object3N);
-				    	sm.addController(rc3);
-				    	
-				    	
-				    	Entity Object4E = sm.createEntity("object4", "Object4.obj");
-				    	Object4E.setPrimitive(Primitive.TRIANGLES);
-				    	Object4N = sm.getRootSceneNode().createChildSceneNode(Object4E.getName() + "Node");
-				    	Object4N.moveBackward(100.0f);
-				    	Object4N.moveUp(150f);
-				    	Object4N.moveLeft(300f);
-				    	Object4N.setLocalScale(64, 64, 64);
-				    	Object4N.attachObject(Object4E);
-						
-						
-						RotationController rc5 =
-						    	new RotationController(Vector3f.createUnitVectorZ(), -.06f);
-						    	rc5.addNode(Object4N);
-						    	sm.addController(rc5);
-				    	
-				    	
-				    	Entity Object1E = sm.createEntity("object1", "Object1Ver2.obj");
-				    	Object1E.setPrimitive(Primitive.TRIANGLES);
-				    	Object1N = sm.getRootSceneNode().createChildSceneNode(Object1E.getName() + "Node");
-				    	Object1N.moveBackward(400.0f);
-				    	Object1N.moveUp(88f);
-				    	Object1N.moveRight(100f);
-				    //	Object1N.setLocalScale(20, 20, 20);
-				    	Object1N.attachObject(Object1E);
-				    	
-				    
-		
-		    	Entity dropShipE = sm.createEntity("dropShip", "DropShipVer4.obj");
-		    	dropShipE.setPrimitive(Primitive.TRIANGLES);
-		    	dropShipN = sm.getRootSceneNode().createChildSceneNode(dropShipE.getName() + "Node");
-		    	dropShipN.moveBackward(30.0f);
-		    	dropShipN.moveUp(55f);
-		    	dropShipN.moveRight(4f);
-		    	dropShipN.attachObject(dropShipE);
-		    	
-		    	
-		    	
-		    	
-		    	
-		
-		    	
-				camera.getParentNode().moveUp(2);
-				
-				shipN.attachChild(camera.getParentNode());
-				camera.getParentNode().setLocalPosition(0,0,0);
-				print("ship position: " + shipN.getWorldPosition());
-				
-
-				sm.getAmbientLight().setIntensity(new Color(.1f, .1f, .1f));
-
-				Light plight = sm.createLight("testLamp0", Light.Type.POINT);
-				plight.setAmbient(new Color(.3f, .3f, .3f));
-				plight.setDiffuse(new Color(.7f, .7f, .7f));
-				plight.setSpecular(new Color(1.0f, 1.0f, 1.0f));
-				plight.setRange(5f);
-
-				SceneNode plightNode = sm.getRootSceneNode().createChildSceneNode("plightNode");
-				plightNode.attachObject(plight);
-
-				//headlight goes in ship
-				Light headlight = sm.createLight("headlight", Light.Type.SPOT);
-				headlight.setConeCutoffAngle(Degreef.createFrom(10));
-				headlight.setSpecular(Color.white);
-
-				SceneNode headlightNode = sm.getRootSceneNode().createChildSceneNode("headlightNode");
-				headlightNode.attachObject(headlight);
-
-				//this.getEngine().getSceneManager().getSceneNode("myShipNode").attachChild(headlightNode);
-				shipN.attachChild(headlightNode);
-				
-				setupAsteroidField(sm);
+	private PatrolEnemy npcFactory(Vector3f position) throws IOException {
+		GameObject npc = nm.makeNPC(position);
+		PatrolEnemy pe = new PatrolEnemy(npc,this,position);
+		GameObject[] targets = new GameObject[] {shipObj};
+		pe.setTargets(targets);
+		return pe;
 	}
 	
-	//TODO lights
-	private SceneNode lightHolder;
-	private void setupLights() {
-		
-		lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
-		
-		Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
-		headlight1.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight1.setSpecular(Color.white);
-		headlight1.setRange(10f);
-
-		SceneNode headlightNode1 = sm.getRootSceneNode().createChildSceneNode("headlightNode1");
-		headlightNode1.attachObject(headlight1);
-		
-		Light headlight2 = sm.createLight("headlight2", Light.Type.SPOT);
-		headlight2.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight2.setSpecular(Color.white);
-		headlight2.setRange(10f);
-
-		SceneNode headlightNode2 = sm.getRootSceneNode().createChildSceneNode("headlightNode2");
-		headlightNode2.attachObject(headlight2);
-		
-		Light headlight3 = sm.createLight("headlight3", Light.Type.SPOT);
-		headlight3.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight3.setSpecular(Color.white);
-		headlight3.setRange(10f);
-
-		SceneNode headlightNode3 = sm.getRootSceneNode().createChildSceneNode("headlightNode3");
-		headlightNode3.attachObject(headlight3);
-		
-		headlightNode1.setLocalPosition(-0.3f,0,0);
-		headlightNode3.setLocalPosition(0.3f,0,0);
-		
-		
-		
-		lightHolder.attachChild(headlightNode1);
-		
-		lightHolder.attachChild(headlightNode2);
-		
-		lightHolder.attachChild(headlightNode3);
-		
-		lightHolder.pitch(Degreef.createFrom(-90));
-		
-		shipN.attachChild(lightHolder);
-	}
-
-	//TODO ship setup with color and team
-	//ship is setup with code provided
-	private void setupShip() throws IOException {
-		print("setupShip");
-		
-		if(chooseTeam == 0) {
-			makePlayerGrey();
+	private void npcUpdates() {
+		for(PatrolEnemy p : patrolEnemies) {
+			if(p!=null) {
+				p.update(deltaTime);
+			}
 		}
-		else makePlayerBlue();
 	}
 	
-	private void makePlayerGrey() throws IOException {
-		print("makePlayerGrey");
-		Entity shipE = sm.createEntity("ship", "cockpitMk3j.obj");
-		shipE.setPrimitive(Primitive.TRIANGLES);
-
-		//SceneNode dolphinN = sm.getRootSceneNode().createChildSceneNode(dolphinE.getName() + "Node");
-		shipN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
-
-		//TODO Setup start locations
-		//set start location for this team
-		shipN.setLocalPosition(startPositionZero);
-		print("shipLocation: " + shipN.getLocalPosition());
-		shipN.attachObject(shipE);
-		shipN.yaw(Degreef.createFrom(180));
-
-		sm.getAmbientLight().setIntensity(new Color(.1f, .1f, .1f));
-	}
-	
-	private void makePlayerBlue() throws IOException {
-		print("makePlayerBlue");
-		Entity shipE = sm.createEntity("ship", "blueCockpit.obj");
-		shipE.setPrimitive(Primitive.TRIANGLES);
-		
-		//SceneNode dolphinN = sm.getRootSceneNode().createChildSceneNode(dolphinE.getName() + "Node");
-		shipN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
-		
-		//set start location for this team
-		shipN.setLocalPosition(startPositionOne);
-		shipN.attachObject(shipE);
-		shipN.yaw(Degreef.createFrom(180));
-
-		Entity BlueCockpitE = sm.createEntity("BlueCockpit", "cockpitMk3j.obj");
-        BlueCockpitE.setPrimitive(Primitive.TRIANGLES);
-        //BlueCockpitN = sm.getRootSceneNode().createChildSceneNode(BlueCockpitE.getName() + "Node");
-        //BlueCockpitN.moveForward(0.0f);
-        //BlueCockpitN.moveUp(25f);
-        //BlueCockpitN.moveRight(0f);
-        //BlueCockpitN.attachObject(BlueCockpitE);
-
-        TextureManager tm1 = eng.getTextureManager();
-        Texture blueTexture2 = tm1.getAssetByPath("cockpitMk3jB-Blue.png");
-        RenderSystem rs2 = sm.getRenderSystem();
-        TextureState state1 = (TextureState)rs2.createRenderState(RenderState.Type.TEXTURE);
-        state1.setTexture(blueTexture2);
-        BlueCockpitE.setRenderState(state1);
-	}
-	*/
-	
-	//TODO Lives Hud still needs to be confirmed by losing a life/all lives
-	//private SceneNode[] lives;
 	private GameObject[] lives;
 
-	//private Vector3 scorePosition = Vector3f.createFrom(0.8f,-0.3f,-0.8f);
 	private Vector3f scorePosition = new Vector3f(0.8f,-0.3f,-0.8f);
 	
-	//private SceneNode scoreHolder;
 	private GameObject scoreHolder;
-	//private Vector3[] livesPositions;
 	private Vector3f[] livesPositions;
 	private void setupScoreIndicator() throws IOException {
 		lives = nm.makeScoreIndicators();
 		livesPositions = new Vector3f[lives.length];
 		
-		//scoreHolder = sm.getRootSceneNode().createChildSceneNode("scoreHolder");
 		scoreHolder = new GameObject(shipObj);
 		scoreHolder.applyParentRotationToPosition(true);
 		
 		for(int i=0; i<lives.length;i++) {
 			livesPositions[i] = lives[i].getLocalLocation();
-			//scoreHolder.attachChild(lives[i]);
 			lives[i].setParent(scoreHolder);
 		}
 		
-		//shipN.attachChild(scoreHolder);
-		//scoreHolder.setParent(shipObj);
-		
-		//scoreHolder.setLocalPosition(scorePosition);
 		scoreHolder.setLocalLocation(scorePosition);
-		
-		//scoreHolder.roll(Degreef.createFrom(90));
-		
-		
-		//scoreHolder.roll(Degreef.createFrom(90));
 		scoreHolder.roll(90);
-		//scoreHolder.pitch(Degreef.createFrom(40));
 		scoreHolder.pitch(40);
+		scoreHolder.pitch(-90);
 	}
 	
 	private void livesUpdate() {
-		//for(SceneNode n : lives) {
 		for(GameObject n : lives) {
 			n.setLocalLocation(new Vector3f(10000,10000,10000));
 		}
@@ -806,71 +475,46 @@ public class MyGame extends VariableFrameRateGame {
 	Light headlight1;
 	Light headlight2;
 	Light headlight3;
-
 	private GameObject lightHolder;
 	private void setupLights(){
-		//lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
 		lightHolder = new GameObject(GameObject.root());
 		
-		//Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
 		headlight1 = new Light();
 		
-		//Light headlight1 = Light();
 		headlight1.setType(Light.LightType.SPOTLIGHT);
 
-		
-		//headlight1.setConeCutoffAngle(Degreef.createFrom(10));
 		headlight1.setCutoffAngle(10);
-		headlight1.setSpecular(255,255,255);
+		headlight1.setSpecular(100,100,100);
 		headlight1.setRange(10f);
 
-		//SceneNode headlightNode1 = sm.getRootSceneNode().createChildSceneNode("headlightNode1");
-		//headlightNode1.attachObject(headlight1);
-		
-		//Light headlight2 = sm.createLight("headlight2", Light.Type.SPOT);
 		headlight2 = new Light();
 		headlight2.setType(Light.LightType.SPOTLIGHT);
-		//headlight2.setConeCutoffAngle(Degreef.createFrom(10));
 		headlight2.setCutoffAngle(10);
 		headlight2.setSpecular(255,255,255);
 		headlight2.setRange(10f);
 		
-		
-		//SceneNode headlightNode2 = sm.getRootSceneNode().createChildSceneNode("headlightNode2");
-		//headlightNode2.attachObject(headlight2);
-		
-		//Light headlight3 = sm.createLight("headlight3", Light.Type.SPOT);
 		headlight3 = new Light();
 		headlight3.setType(Light.LightType.SPOTLIGHT);
-		//headlight3.setConeCutoffAngle(Degreef.createFrom(10));
 		headlight3.setCutoffAngle(10);
 		headlight3.setSpecular(255,255,255);
 		headlight3.setRange(10f);
 
-		//SceneNode headlightNode3 = sm.getRootSceneNode().createChildSceneNode("headlightNode3");
-		//headlightNode3.attachObject(headlight3);
-		
-		//headlightNode1.setLocalPosition(-0.3f,0,0);
-		//headlightNode3.setLocalPosition(0.3f,0,0);
-		
-		
-		
-		//lightHolder.attachChild(headlightNode1);
-		
-		//lightHolder.attachChild(headlightNode2);
-		
-		//lightHolder.attachChild(headlightNode3);
-		
-		//lightHolder.pitch(Degreef.createFrom(-90));
 		lightHolder.pitch(-90);
 		
-		//shipN.attachChild(lightHolder);
 		lightHolder.setParent(getPlayerShip());
 		lightHolder.lookAt(new Vector3f(0,1,0));
 		lightHolder.applyParentRotationToPosition(true);
+
+		sceneGraph.addLight(headlight1);
+		sceneGraph.addLight(headlight2);
+		sceneGraph.addLight(headlight3);
 	}
 
+	Vector3f lightsOffset = new Vector3f(0,0,0);
 	private void updateLights(){
+		headlight1.setLocation(shipObj.getWorldLocation());
+		headlight1.setDirection(shipObj.getWorldForwardVector().add(lightsOffset));
+		/*
 		Vector3f location = lightHolder.getWorldLocation();
 		Vector3f up = shipObj.getLocalUpVector();
 		//System.out.println(location + " " + shipObj.getLocalUpVector());
@@ -884,6 +528,7 @@ public class MyGame extends VariableFrameRateGame {
 
 		print(shipObj.getWorldUpVector() + " " + headlight1.getDirection()[0] + "," + headlight1.getDirection()[1] + ","
 		 + headlight1.getDirection()[2]);
+		*/
 	}
 
 	private void setupTerrain(){
@@ -900,8 +545,10 @@ public class MyGame extends VariableFrameRateGame {
 		handS.loadAnimation("throttleBackFromUp", "FromUp_GoDown_andPause.rka");
 		handS.loadAnimation("throttleBackFromDown", "FromDown_GoUp_andPause.rka");
 		hand = new GameObject(shipObj, handS, handT);
-		hand.up(-0.5f);
-		hand.left(-0.7f);
+		Matrix4f scale  = (new Matrix4f()).scaling(0.5f,0.5f,0.5f);
+		hand.setLocalScale(scale);
+		hand.up(-1);
+		hand.left(-1f);
 		hand.applyParentRotationToPosition(true);
 	}
 
@@ -909,85 +556,6 @@ public class MyGame extends VariableFrameRateGame {
 		throttleController.update();
 		handS.updateAnimation();
 	}
-
-	/*
-	//TODO lights
-	private SceneNode lightHolder;
-	private void setupLights() {
-		
-		lightHolder = sm.getRootSceneNode().createChildSceneNode("lightHolder");
-		
-		Light headlight1 = sm.createLight("headlight1", Light.Type.SPOT);
-		headlight1.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight1.setSpecular(Color.white);
-		headlight1.setRange(10f);
-
-		SceneNode headlightNode1 = sm.getRootSceneNode().createChildSceneNode("headlightNode1");
-		headlightNode1.attachObject(headlight1);
-		
-		Light headlight2 = sm.createLight("headlight2", Light.Type.SPOT);
-		headlight2.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight2.setSpecular(Color.white);
-		headlight2.setRange(10f);
-
-		SceneNode headlightNode2 = sm.getRootSceneNode().createChildSceneNode("headlightNode2");
-		headlightNode2.attachObject(headlight2);
-		
-		Light headlight3 = sm.createLight("headlight3", Light.Type.SPOT);
-		headlight3.setConeCutoffAngle(Degreef.createFrom(10));
-		headlight3.setSpecular(Color.white);
-		headlight3.setRange(10f);
-
-		SceneNode headlightNode3 = sm.getRootSceneNode().createChildSceneNode("headlightNode3");
-		headlightNode3.attachObject(headlight3);
-		
-		headlightNode1.setLocalPosition(-0.3f,0,0);
-		headlightNode3.setLocalPosition(0.3f,0,0);
-		
-		lightHolder.attachChild(headlightNode1);
-		
-		lightHolder.attachChild(headlightNode2);
-		
-		lightHolder.attachChild(headlightNode3);
-		
-		lightHolder.pitch(Degreef.createFrom(-90));
-		
-		shipN.attachChild(lightHolder);
-	}*/
-	
-
-	/*
-	//TODO NPC stuff
-	private void setupPatrolNPC(Engine eng, SceneManager sm) throws IOException{
-		//SceneNode npc1 = nm.makeNPC("npc1");
-		npcs = new PatrolEnemy[10];
-		
-		Vector3 position1 = Vector3f.createFrom(20,35,145);
-		npcs[0] = npcFactory("npcOne", position1);
-		
-		Vector3 position2 = Vector3f.createFrom(0,27,145);
-		npcs[1] = npcFactory("npcTwo", position1);
-		
-		Vector3 position3 = Vector3f.createFrom(-20,27,145);
-		npcs[2] = npcFactory("npcThree", position1);
-	}
-	
-	private PatrolEnemy npcFactory(String name, Vector3 position) throws IOException {
-		SceneNode node = nm.makeNPC(name, position);
-		PatrolEnemy pe = new PatrolEnemy(node,this,position);
-		SceneNode[] targets = new SceneNode[] {shipN};
-		pe.setTargets(targets);
-		return pe;
-	}
-	
-	private void npcUpdates() {
-		for(PatrolEnemy p : npcs) {
-			if(p!=null) {
-				p.update(eng.getElapsedTimeMillis());
-			}
-		}
-	}
-	*/
 
 	private void setupAdditionalControls() {
 		ArrayList<Controller> controllers = im.getControllers();
@@ -1009,42 +577,38 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 
-	/*
 	//TODO ghost avatar
 	public void setupGhostAvatar(GhostAvatar ghost, int team) throws IOException {
+		GameObject ghostN;
+		ghostN = new GameObject(GameObject.root(), blueShipS, blueShipT);
 		
-		System.out.println("setting up ghost " + ghost.getID().toString());
-		SceneNode ghostN = sm.getRootSceneNode().createChildSceneNode(ghost.getID().toString());
-		
-		if(team==0) {
-			ghostN = makeGreyGhost(ghostN,ghost);
-		}else {
-			ghostN = makeBlueGhost(ghostN,ghost);
-		}
-
-		ghostN.setLocalPosition((Vector3f) Vector3f.createFrom(-2, 0, 0));
-		//ghostN.attachObject(shipE);
-		ghostN.yaw(Degreef.createFrom(180));
+		ghostN.yaw(180);
 		
 		float mass = 1.0f;
+		float up[] = {0,1,0};
 		double[] temptf;
-		temptf = MyGame.toDoubleArray(ghostN.getLocalTransform().toFloatArray());
-		PhysicsObject shipPhysicsObject = physicsEng.addSphereObject(physicsEng.nextUID(), mass, temptf, 1.0f);
-		ghostN.setPhysicsObject(shipPhysicsObject);
+		double[] tempTransform;
+
+		Matrix4f translation = new Matrix4f(ghostN.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		PhysicsObject ghostPhysObj = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 1.0f);
+		ghostN.setPhysicsObject(ghostPhysObj);
 		
 		ghost.setNode(ghostN);
 	}
 	
-	private SceneNode makeGreyGhost(SceneNode ghostN, GhostAvatar ghost) throws IOException {
-		Entity shipE = sm.createEntity("ghostShip" + ghost.getID() , "GhostShips-f.obj");
-		shipE.setPrimitive(Primitive.TRIANGLES);
+	//private SceneNode makeGreyGhost(SceneNode ghostN, GhostAvatar ghost) throws IOException {
+	private GameObject makeGreyGhost(GameObject ghostN, GhostAvatar ghost) throws IOException {
+		//Entity shipE = sm.createEntity("ghostShip" + ghost.getID() , "GhostShips-f.obj");
+		//shipE.setPrimitive(Primitive.TRIANGLES);
 
 		//SceneNode dolphinN = sm.getRootSceneNode().createChildSceneNode(dolphinE.getName() + "Node");
-		ghostN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
-		ghostN.attachObject(shipE);
+		//ghostN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
+		//ghostN.attachObject(shipE);
+		//ghostN = new GameObject(GameObject.root(), npcS, npcT);
 		return ghostN;
 	}
-	
+	/*
 	private SceneNode makeBlueGhost(SceneNode ghostN, GhostAvatar ghost) throws IOException {
 		//print("makeBlueGhost()");
 		Entity shipE = sm.createEntity("ghostShip" + ghost.getID() , "blueGhost.obj");
@@ -1055,64 +619,15 @@ public class MyGame extends VariableFrameRateGame {
 		ghostN.attachObject(shipE);
 		return ghostN;
 	}
-
 	*/
+
+	
 	
 	/*
 	//TODO update
 	public void update() {
 	//protected void update(Engine engine) {
-
-		processNetworking(engine.getElapsedTimeMillis());
-		
-		SceneManager sm = engine.getSceneManager();
-		SceneNode stationN = sm.getSceneNode("stationNode");
-		SceneNode Object1N = sm.getSceneNode("object1Node");
-		SceneNode movingStarN = sm.getSceneNode("movingStarNode");
-		playerController.update();
-		
-		
-		//scoreHolder.roll(Degreef.createFrom(10 * engine.getElapsedTimeMillis()/1000));
-
 		npcUpdates();
-		
-		
-		//System.out.println("x:" + shipN.getLocalPosition().x());
-		//System.out.println("y:" + shipN.getLocalPosition().y());
-		//System.out.println("z:" + shipN.getLocalPosition().z());
-
-		Object1N.moveLeft(.3f);
-		Object3N.moveRight(.1f);
-		Object4N.moveBackward(.1f);
-		dropShipN.moveForward(.08f);
-		
-		movingStarN.moveForward(.2f);
-		movingStarN.moveLeft(.2f);
-		//dropShipN.roll(Degreef.createFrom(1));
-
-		float deltaTime = engine.getElapsedTimeMillis()/1000;
-		
-		tc.update(deltaTime);
-		
-		SkeletalEntity rightHand = (SkeletalEntity) eng.getSceneManager().getEntity("rightHandAv");
-		
-		rightHand.update();
-		
-					SkeletalEntity movingStar =
-		(SkeletalEntity) eng.getSceneManager().getEntity("movingStar");
-		movingStar.update();
-		
-		
-		//System.out.println("update");
-		
-		//System.out.println("station world position is " + stationN.getWorldPosition());
-		
-		//print("" + stationN.getWorldPosition());
-		//print("" + stationSound);
-		stationSound.setLocation(stationN.getWorldPosition());
-		laserFireSound.setLocation(shipN.getWorldPosition());
-		shipNoiseSound.setLocation(Object1N.getWorldPosition());
-		setEarParameters(sm);
 	}
 	*/
 
@@ -1137,14 +652,16 @@ public class MyGame extends VariableFrameRateGame {
 			protClient.processPackets();
 		}
 	}
+	*/
 	
-	Vector3 startPositionZero = Vector3f.createFrom(0,35,-90);
-	Vector3 startPositionOne = Vector3f.createFrom(0,35,380);
+	Vector3f startPositionZero = new Vector3f(0,35,-90);
+	Vector3f startPositionOne = new Vector3f(0,35,380);
 	public void hit() {
 		//Return player to starting position based on team
 		
 		shipLives--;
 		
+		/*
 		if(getPlayerTeam() == 0) {
 			double[] transform = shipN.getPhysicsObject().getTransform();
 			
@@ -1163,6 +680,7 @@ public class MyGame extends VariableFrameRateGame {
 			
 			shipN.getPhysicsObject().setTransform(transform);
 		}
+		*/
 	}
 	
 	public void shootNetworking() {
@@ -1171,32 +689,19 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 
-	public float getSpeedScale() {
-		return speedScale;
-	}
-
-	public float getYawDegrees() {
-		return yawDegrees;
-	}
-
-	public float getPitchDegrees() {
-		return pitchDegrees;
-	}
-	
 	public void setIsConnected(boolean b) { isConnected = b; }
 	
-	public Vector3 getPlayerPosition() {
-		return shipN.getWorldPosition();
+	public Vector3f getPlayerPosition() {
+		return getPlayerShip().getWorldLocation();
 	}
 	
-	public Vector3 getPlayerDirection() {
-		return Vector3f.createFrom(shipN.getPhysicsObject().getLinearVelocity());
+	public Vector3f getPlayerDirection() {
+		return new Vector3f(shipObj.getPhysicsObject().getLinearVelocity());
 	}
 	
 	public int getPlayerTeam() {
-		return chooseTeam;
+		return 1;
 	}
-	*/
 	
 	private float animationSpeed = 4f;
 	public void throttleUpAndPauseAnimation()
@@ -1227,68 +732,40 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 
-	//TODO implement this hotkey
 	private class ToggleLights extends AbstractInputAction {
 		
 		private boolean on = true;
 		@Override
 		public void performAction(float arg0, Event e) {
-			print("Toggle Lights");
-			/*if(on) {
-				lightHolder.setLocalPosition(10000,10000,10000);
+			if(on) {
+				lightsOffset = new Vector3f(10000,10000,10000);
 				on=false;
 			}
 			else {
-				lightHolder.setLocalPosition(0,0,0);
+				lightsOffset = new Vector3f(0,0,0);
 				on=true;
 			}
-			*/
+			
 		}
 	}
 
-	/*
-	public void setEarParameters(SceneManager sm)
-	{ 
-		
-		SceneNode shipN = eng.getSceneManager().getSceneNode("shipNode");
-		Vector3 avDir = shipN.getWorldForwardAxis();
-		// note - should get the camera's forward direction
-		// - avatar direction plus azimuth
-		//audioMgr.getEar().setLocation(stationN.getWorldPosition());
-		//audioMgr.getEar().setOrientation(avDir, Vector3f.createFrom(0,1,0));
-		audioMgr.getEar().setLocation(shipN.getWorldPosition());
-		audioMgr.getEar().setOrientation(avDir, Vector3f.createFrom(0,1,0));
-
-	}
-
-	*/
-	
-	/*
-	public void initAudio(SceneManager sm)
+	private void setupAudio()
 	{ 
 		print("initAudio setup");
-		Configuration configuration = sm.getConfiguration();
-		String sfxPath = configuration.valueOf("assets.sounds.path");
-		String musicPath = configuration.valueOf("assets.music.path");
 		AudioResource theMusic, theStation, npcBeeps, theShipNoise, theFrickinLasers;
-		audioMgr = AudioManagerFactory.createAudioManager("ray.audio.joal.JOALAudioManager");
+		audioMgr = AudioManagerFactory.createAudioManager("tage.audio.joal.JOALAudioManager");
 		
 		print("audioMgr: " + audioMgr);
 		if (!audioMgr.initialize()) {
-			System.out.println("The Audio Manager failed to initialize :(");
+			System.out.println("The Audio Manager failed to initialize!");
 			return;
 		}
 		
-		theMusic = audioMgr.createAudioResource(musicPath + "bensound-epic.wav", AudioResourceType.AUDIO_STREAM);
-		theStation = audioMgr.createAudioResource(sfxPath + "Cartoon-warp-02.wav", AudioResourceType.AUDIO_SAMPLE);
-		npcBeeps = audioMgr.createAudioResource(sfxPath + "Robot_blip-Marianne_Gagnon-120342607.wav", AudioResourceType.AUDIO_SAMPLE);
-		theShipNoise = audioMgr.createAudioResource(sfxPath + "RocketThrusters-SoundBible.com-1432176431.wav", AudioResourceType.AUDIO_SAMPLE);
-		theFrickinLasers = audioMgr.createAudioResource(sfxPath + "LaserBlasts-SoundBible.com-108608437.wav", AudioResourceType.AUDIO_SAMPLE);
-		
-
-		//  NPCSound, laserFireSound, shipNoiseSound;
-		
-
+		theMusic = audioMgr.createAudioResource("assets/sounds/bensound-epic.wav", AudioResourceType.AUDIO_SAMPLE);
+		theStation = audioMgr.createAudioResource("assets/sounds/Cartoon-warp-02.wav", AudioResourceType.AUDIO_SAMPLE);
+		npcBeeps = audioMgr.createAudioResource("assets/sounds/Robot_blip-Marianne_Gagnon-120342607.wav", AudioResourceType.AUDIO_SAMPLE);
+		theShipNoise = audioMgr.createAudioResource("assets/sounds/RocketThrusters-SoundBible.com-1432176431.wav", AudioResourceType.AUDIO_SAMPLE);
+		theFrickinLasers = audioMgr.createAudioResource("assets/sounds/LaserBlasts-SoundBible.com-108608437.wav", AudioResourceType.AUDIO_SAMPLE);
 		
 		backgroundMusic = new Sound(theMusic, SoundType.SOUND_MUSIC, 1, true);
 		stationSound = new Sound(theStation, SoundType.SOUND_EFFECT, 400, true);
@@ -1296,54 +773,54 @@ public class MyGame extends VariableFrameRateGame {
 		laserFireSound = new Sound(theFrickinLasers, SoundType.SOUND_EFFECT, 2, false);
 		shipNoiseSound = new Sound(theShipNoise, SoundType.SOUND_EFFECT, 10, true);
 		
-	
-			backgroundMusic.initialize(audioMgr);
-			backgroundMusic.play();
-			
+		backgroundMusic.initialize(audioMgr);
+		backgroundMusic.setMaxDistance(10.0f);
+		backgroundMusic.setMinDistance(0.5f);
+		backgroundMusic.setRollOff(5.0f);
 
-			stationSound.initialize(audioMgr);
-			stationSound.setMaxDistance(10.0f);
-			stationSound.setMinDistance(0.5f);
-			stationSound.setRollOff(5.0f);
-			
-			shipNoiseSound.initialize(audioMgr);
-			shipNoiseSound.setMaxDistance(10.0f);
-			shipNoiseSound.setMinDistance(0.5f);
-			shipNoiseSound.setRollOff(5.0f);
-			
-			NPCSound.initialize(audioMgr);
-			NPCSound.setMaxDistance(10.0f);
-			NPCSound.setMinDistance(0.5f);
-			NPCSound.setRollOff(5.0f);
-			
-			laserFireSound.initialize(audioMgr);
-			laserFireSound.setMaxDistance(5.0f);
-			laserFireSound.setMinDistance(0.5f);
-			laserFireSound.setRollOff(2.5f);
-			
-			
-			SceneNode stationN = sm.getSceneNode("stationNode");
+		stationSound.initialize(audioMgr);
+		stationSound.setMaxDistance(10.0f);
+		stationSound.setMinDistance(0.5f);
+		stationSound.setRollOff(5.0f);
 		
-			
-			SceneNode shipN = sm.getSceneNode("shipNode");
-			
-			SceneNode Object1N = sm.getSceneNode("object1Node");
-			
-			shipNoiseSound.setLocation(Object1N.getWorldPosition());
-			
-			setEarParameters(sm);
-			
-			shipNoiseSound.play();
-			stationSound.play();
-		//	NPCSound.play();
-	}
-	
-	public static void playFireSound()
-	{
-		laserFireSound.play();
+		shipNoiseSound.initialize(audioMgr);
+		shipNoiseSound.setMaxDistance(10.0f);
+		shipNoiseSound.setMinDistance(0.5f);
+		shipNoiseSound.setRollOff(5.0f);
+		
+		NPCSound.initialize(audioMgr);
+		NPCSound.setMaxDistance(10.0f);
+		NPCSound.setMinDistance(0.5f);
+		NPCSound.setRollOff(5.0f);
+		
+		laserFireSound.initialize(audioMgr);
+		laserFireSound.setMaxDistance(5.0f);
+		laserFireSound.setMinDistance(0.5f);
+		laserFireSound.setRollOff(2.5f);
+		
+		setEarParameters();
+		
+		shipNoiseSound.play();
+		//backgroundMusic.play();
+		//stationSound.play();
 	}
 
-	*/
+	private void audioUpdate(){
+		laserFireSound.setLocation(shipObj.getWorldLocation());
+		setEarParameters();
+	}
+
+	private void setEarParameters()
+	{
+		audioMgr.getEar().setLocation(shipObj.getWorldLocation());
+		audioMgr.getEar().setOrientation(getCamera().getN(), new Vector3f(0,1,0));
+	}
+	
+	public void playFireSound()
+	{
+		//TODO turn this back on to hear laser sounds
+		//laserFireSound.play();
+	}
 
 	public int getThrottleSign() {
 		return playerController.getThrottleSign();
@@ -1419,16 +896,17 @@ public class MyGame extends VariableFrameRateGame {
 	public SceneGraph getSceneGraph() { return engine.getSceneGraph(); }
 	public NodeMaker getNodeMaker() { return nm; }
 	public GameObject getPlayerShip() { return shipObj; }
+	public GameObject getTerrain() { return terrain; }
 	public ObjShape getLaserShape() { return laserS; }
 	public ObjShape getThrottleShape() { return throttleS; }
 	public ObjShape getScoreShape() { return scoreS; }
-	public ObjShape getNPCShape() { return laserS; }
+	public ObjShape getNPCShape() { return npcS; }
 	public ObjShape getAsteroid1Shape() { return asteroid1S; }
 	public ObjShape getAsteroid2Shape() { return asteroid2S; }
 	public TextureImage getLaserTexture() { return laserT; }
 	public TextureImage getThrottleTexture() { return throttleT; }
 	public TextureImage getScoreTexture() { return scoreT; }
-	public TextureImage getNPCTexture() { return laserT; }
+	public TextureImage getNPCTexture() { return npcT; }
 	public TextureImage getAsteroid1Texture() { return asteroid1T; }
 	public TextureImage getAsteroid2Texture() { return asteroid2T; }
 }

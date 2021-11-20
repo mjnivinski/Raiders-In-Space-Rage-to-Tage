@@ -3,8 +3,11 @@ package ris;
 import java.util.Arrays;
 
 //import a3.myGameEngine.VectorMath;
-import ray.rage.scene.SceneNode;
-import ray.rml.Vector3;
+//import ray.rage.scene.SceneNode;
+//import ray.rml.Vector3;
+import tage.*;
+
+import org.joml.*;
 
 public class PatrolStrategyContext {
 	PatrolStrategy strategy;
@@ -14,20 +17,25 @@ public class PatrolStrategyContext {
 	private PatrolReturnStrategy PRS;
 	private PatrolPatrolStrategy PPS;
 	
-	private SceneNode npc;
-	private SceneNode target;
-	private SceneNode chaseTarget;
+	//private SceneNode npc;
+	private GameObject npc;
+	//private SceneNode target;
+	private GameObject target;
+	//private SceneNode chaseTarget;
+	private GameObject chaseTarget;
 	
-	private Vector3 position;
+	private Vector3f position;
 	
 	float defenseTether = 150;
 	float enemyTether = 150;
 	
-	SceneNode[] lasers;
+	//SceneNode[] lasers;
+	GameObject[] lasers;
 	
-	public PatrolStrategyContext(PatrolEnemy pe, SceneNode n, SceneNode t, float radius, float dT, float eT, SceneNode[] ls) {
+	//public PatrolStrategyContext(PatrolEnemy pe, SceneNode n, SceneNode t, float radius, float dT, float eT, SceneNode[] ls) {
+	public PatrolStrategyContext(PatrolEnemy pe, GameObject n, GameObject t, float radius, float dT, float eT, GameObject[] ls) {
 		patrolEnemy = pe;
-		System.out.println("Patrol Context Constructor");
+		//System.out.println("Patrol Context Constructor");
 		npc = n;
 		target = t;
 		
@@ -39,12 +47,13 @@ public class PatrolStrategyContext {
 		
 		PRS = new PatrolReturnStrategy(n, t, radius);
 		//PPS = new PatrolPatrolStrategy(n,t,enemyTether);
-		PPS = new PatrolPatrolStrategy(n,t.getWorldPosition(),enemyTether);
+		PPS = new PatrolPatrolStrategy(n,t.getWorldLocation(),enemyTether);
 		
 		strategy = PPS;
 	}
 	
-	public PatrolStrategyContext(PatrolEnemy pe, SceneNode n, Vector3 p, SceneNode[] ls) {
+	//public PatrolStrategyContext(PatrolEnemy pe, SceneNode n, Vector3 p, SceneNode[] ls) {
+	public PatrolStrategyContext(PatrolEnemy pe, GameObject n, Vector3f p, GameObject[] ls) {
 		patrolEnemy = pe;
 		npc = n;
 		position = p;
@@ -57,24 +66,25 @@ public class PatrolStrategyContext {
 	}
 	
 	
-	public void chaseEnemy(SceneNode t) {
+	//public void chaseEnemy(SceneNode t) {
+	public void chaseEnemy(GameObject t) {
 		//npc.getPhysicsObject().setLinearVelocity(new float[]{1,1,1});
 		strategy = new PatrolChaseStrategy(patrolEnemy, npc,t, lasers);
 		chaseTarget = t;
 	}
 	
 	public boolean stillChasing() {
-		System.out.println("chase check distance outside:"  + VectorMath.distance(chaseTarget.getWorldPosition(), npc.getWorldPosition()));
-		if(VectorMath.distance(chaseTarget.getWorldPosition(), npc.getWorldPosition()) > enemyTether) {
-			System.out.println("chase check distance inside:"  + VectorMath.distance(chaseTarget.getWorldPosition(), npc.getWorldPosition()));
+		System.out.println("chase check distance outside:"  + VectorMath.distance(chaseTarget.getWorldLocation(), npc.getWorldLocation()));
+		if(VectorMath.distance(chaseTarget.getWorldLocation(), npc.getWorldLocation()) > enemyTether) {
+			System.out.println("chase check distance inside:"  + VectorMath.distance(chaseTarget.getWorldLocation(), npc.getWorldLocation()));
 			return false;
 		}
 		return true;
 	}
 	
 	public boolean stillReturning() {
-		if(VectorMath.distance(npc.getWorldPosition(),position) < 1) {
-			npc.setLocalPosition(position);
+		if(VectorMath.distance(npc.getWorldLocation(),position) < 1) {
+			npc.setLocalLocation(position);
 			
 			return false;
 		}

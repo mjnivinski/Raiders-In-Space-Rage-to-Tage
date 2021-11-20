@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import tage.*;
 
-//import tage.rml.Vector3;
-//import tage.rml.Degreef;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 
@@ -109,7 +107,6 @@ public class NodeMaker {
 		GameObject[] list = new GameObject[laserCount];
 		
 		for(int i=0; i<list.length; i++) {
-			//String s = name + "npcLasers" + Integer.toString(i);
 			list[i] = makeLaser();
 		}
 		
@@ -132,7 +129,6 @@ public class NodeMaker {
 		PhysicsObject laserPhysicsObject = physics.addSphereObject(physics.nextUID(), mass, tempTransform, 1.0f);
 		laserPhysicsObject.setDamping(0, 0);
 		laser.setPhysicsObject(laserPhysicsObject);
-		
 		
 		laser.lookAt(ship);
 		
@@ -189,19 +185,11 @@ public class NodeMaker {
 		return score;
 	}
 	
-	public GameObject makeNPC(String name, Vector3f position) throws IOException {
+	public GameObject makeNPC(Vector3f position) throws IOException {
 
 		GameObject npc = new GameObject(GameObject.root(), npcS, npcT);
-
-		//GameObject npc = sm.getRootSceneNode().createChildSceneNode(name);
 		
 		npc.setLocalLocation(new Vector3f(position.x(), position.y(), position.z()));
-
-		//npc.setLocalPosition
-		
-		//float mass = 1.0f;
-		//float up[] = {0,1,0};
-		//double[] temptf;
 
 		float mass = 1.0f;
 		double[] tempTransform;
@@ -216,47 +204,38 @@ public class NodeMaker {
 	}
 
 	public GameObject[] makeAsteroids(){
-		//TODO setup asteroids
 		GameObject[] asteroids = new GameObject[8];
 
 		asteroids[0] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
 		asteroids[0].setLocalLocation(new Vector3f(612,100,100));
-		//asteroids[0].setLocalScale((new Matrix4f()).scaling(20));
 		asteroids[0].setLocalScale((new Matrix4f()).scaling(2));
 		
 		asteroids[1] = new GameObject(GameObject.root(), asteroid2S, asteroid1T);
 		asteroids[1].setLocalLocation(new Vector3f(600,150,100));
-		//asteroids[1].setLocalScale((new Matrix4f()).scaling(64));
 		asteroids[1].setLocalScale((new Matrix4f()).scaling(6.4f));
 		
 		asteroids[2] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
 		asteroids[2].setLocalLocation(new Vector3f(577,112,106));
-		//asteroids[2].setLocalScale((new Matrix4f()).scaling(30));
 		asteroids[2].setLocalScale((new Matrix4f()).scaling(3));
 		
 		asteroids[3] = new GameObject(GameObject.root(), asteroid1S, asteroid2T);
 		asteroids[3].setLocalLocation(new Vector3f(-560,145,115));
-		//asteroids[3].setLocalScale((new Matrix4f()).scaling(12));
 		asteroids[3].setLocalScale((new Matrix4f()).scaling(1.2f));
 		
 		asteroids[4] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
 		asteroids[4].setLocalLocation(new Vector3f(637,135,100));
-		//asteroids[4].setLocalScale((new Matrix4f()).scaling(35,20,35));
 		asteroids[4].setLocalScale((new Matrix4f()).scaling(3.5f,2.0f,3.5f));
 
 		asteroids[5] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
 		asteroids[5].setLocalLocation(new Vector3f(615,200,115));
-		//asteroids[5].setLocalScale((new Matrix4f()).scaling(90));
 		asteroids[5].setLocalScale((new Matrix4f()).scaling(9));
 		
 		asteroids[6] = new GameObject(GameObject.root(), asteroid2S, asteroid2T);
 		asteroids[6].setLocalLocation(new Vector3f(577,127,130));
-		//asteroids[6].setLocalScale((new Matrix4f()).scaling(5,10,15));
 		asteroids[6].setLocalScale((new Matrix4f()).scaling(.5f,1.0f,1.5f));
 		
 		asteroids[7] = new GameObject(GameObject.root(), asteroid1S, asteroid1T);
 		asteroids[7].setLocalLocation(new Vector3f(-400,100,135));
-		//asteroids[7].setLocalScale((new Matrix4f()).scaling(88,100,88));
 		asteroids[7].setLocalScale((new Matrix4f()).scaling(8.8f,10.0f,8.8f));
 		
 		RotationController rc = new RotationController(game.getEngine(), new Vector3f(0,1,0), 1f);

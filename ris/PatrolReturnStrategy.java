@@ -1,20 +1,27 @@
 package ris;
 
-import ray.physics.PhysicsObject;
-import ray.rage.scene.SceneNode;
-import ray.rml.Vector3;
+//import ray.physics.PhysicsObject;
+//import ray.rage.scene.SceneNode;
+//import ray.rml.Vector3;
+import tage.*;
+import tage.physics.*;
+
+import org.joml.*;
 
 public class PatrolReturnStrategy implements PatrolStrategy {
 
-	SceneNode npc;
+	//SceneNode npc;
+	GameObject npc;
 	PhysicsObject npcPhys;
-	SceneNode target; //might replace target with position
+	//SceneNode target; //might replace target with position
+	GameObject target; //might replace target with position
 	float radius;
 	float power = 10f;
-	Vector3 position;
+	//Vector3 position;
+	Vector3f position;
 	
-	public PatrolReturnStrategy(SceneNode n, SceneNode t, float r) {
-		//herefds
+	//public PatrolReturnStrategy(SceneNode n, SceneNode t, float r) {
+	public PatrolReturnStrategy(GameObject n, GameObject t, float r) {
 		npc = n;
 		npcPhys = npc.getPhysicsObject();
 		System.out.println("npc patrol: " + npc);
@@ -24,7 +31,8 @@ public class PatrolReturnStrategy implements PatrolStrategy {
 		radius = r;
 	}
 	
-	public PatrolReturnStrategy(SceneNode n, Vector3 p) {
+	// PatrolReturnStrategy(SceneNode n, Vector3 p) {
+	public PatrolReturnStrategy(GameObject n, Vector3f p) {
 		npc = n;
 		position = p;
 		npcPhys = n.getPhysicsObject();
@@ -36,8 +44,9 @@ public class PatrolReturnStrategy implements PatrolStrategy {
 		//System.out.println("npcPhys: " + npcPhys);
 		
 		//System.out.println("linear damping: " + npcPhys.getLinearDamping());
-		Vector3 start = npc.getWorldPosition();
-		Vector3 end = position;
+		//Vector3f start = npc.getWorldPosition();
+		Vector3f start = npc.getWorldLocation();
+		Vector3f end = position;
 		//Vector3 end = target.getWorldPosition();
 		
 		float[] xyz = new float[3];
