@@ -192,7 +192,6 @@ public class ShipController {
 		
 		updatePosition();
 		
-		//TODO undo this so the ship can shoot again
 		shooting();
 	}
 	
@@ -220,17 +219,24 @@ public class ShipController {
 	}
 	
 	private void updatePosition() {
+		//TODO updatePosition
 		//System.out.println("updatePosition()");
 		//System.out.println(ship.getWorldLocation());
 		//Vector3 direction = ship.getWorldForwardAxis();
 		Vector3f direction = ship.getWorldForwardVector();
+
+		
+		
 		//System.out.println(direction + " throttle " + throttle);
+		//System.out.println("shipSpeed: " + shipSpeed + " throttle: " + throttle);
 		direction = direction.mul(shipSpeed * throttle);
 
-		//System.out.println("shipSpeed: " + shipSpeed + " throttle: " + throttle);
+		//System.out.println(direction);
 		
 		float[] velocities = new float[] {direction.x(),direction.y(),direction.z()};
 		shipPhys.setLinearVelocity(velocities);
+		//float[] velocity = shipPhys.getLinearVelocity();
+		//System.out.println(velocity[0] + " " + velocity[1] + " " + velocity[2]);
 		
 		updateVerticalPosition();
 	}
@@ -242,7 +248,7 @@ public class ShipController {
 	{
 		Vector3f position = ship.getWorldLocation();
 		terrainHeight = game.getTerrain().getHeight(position.x(), position.z()) + game.getTerrain().getWorldLocation().y() + 15;
-		
+
 		shipHeight = position.y();
 
 		if(terrainHeight > shipHeight) {
@@ -274,18 +280,22 @@ public class ShipController {
 	}
 	
 	private void throttle() {
-		
+		//TODO throttle()
+		//System.out.println("throttle before: " + throttle);
+
 		float value = keyVsGamepad(throttleUp, throttleDown, controllerThrottle);
 		
-		//System.out.println("throttle: " + throttle + "throttleAccel: " + throttleAccel + " value: " + value + " deltaTime: " + deltaTime);
-		throttle+= throttleAccel * value * deltaTime;
+		//System.out.println("throttle: " + throttle + " throttleAccel: " + throttleAccel + " value: " + value + " deltaTime: " + deltaTime);
+		throttle += throttleAccel * value * deltaTime;
 		
 		if(throttle > 1) throttle = 1;
-		if(throttle < 0.01f) throttle = 0.001f;
+		if(throttle < 0f) throttle = 0f;
+		//if(throttle < 0.01f) throttle = 0.001f;
 		//TODO completely unecessary thing to investigate, why does the ship move if it gets set to 0?
 		//It's because we use the current speed to calculate the next speed (only with multiplication)
 		//So it needs to be able to accelerate from 0
-		//if(throttle < 0f) throttle = 0f;
+
+		//System.out.println("throttle after: " + throttle);
 	}
 	
 	private float keyVsGamepad(float keyPos, float keyNeg, float controllerValue) {
@@ -356,12 +366,12 @@ public class ShipController {
 	
 	public int getThrottleSign() {
 		float value = keyVsGamepad(throttleUp, throttleDown, controllerThrottle);
-		
+		/*
 		throttle+= throttleAccel * value * deltaTime;
 		
 		if(throttle > 1) throttle = 1;
 		//if(throttle < 0) throttle = 0;
-		if(throttle < 0.01f) throttle = 0.01f;
+		if(throttle < 0.01f) throttle = 0.01f;*/
 		
 		int valueInt;
 		if(value > 0) valueInt = 1;

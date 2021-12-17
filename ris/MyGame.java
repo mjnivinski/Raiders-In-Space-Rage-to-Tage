@@ -47,89 +47,10 @@ import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
 import tage.networking.IGameConnection.ProtocolType;
 
-//import java.util.UUID;
-//import java.util.Vector;
-
-/*import javax.swing.ButtonGroup;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JRadioButton;*/
-
-//import static ray.rage.scene.SkeletalEntity.EndType.*;
-//import static tage.scene.SkeletalEntity.EndType.*;
-
-//import ray.audio.*;
-//import tage.audio.*;
-//import com.jogamp.openal.ALFactory;
-
 import org.joml.*;
 
 public class MyGame extends VariableFrameRateGame {
 
-	/*
-	private String serverAddress;
-	private int serverPort;
-	private ProtocolType serverProtocol;
-	private ProtocolClient protClient;
-	private boolean isConnected;
-	private Vector<UUID> gameObjectsToRemove;
-	
-	
-	Sound backgroundMusic, stationSound, NPCSound;
-	static Sound laserFireSound;
-	Sound shipNoiseSound;
-	
-	//Declaration area
-	Random random = new Random();
-	
-	SceneManager sm;
-	static Engine eng;
-	EntityMaker eMaker;
-	NodeMaker nm;
-	
-	private PhysicsEngine physicsEng;
-
-	GL4RenderSystem rs;
-	float elapsTime = 0.0f;
-	String elapsTimeStr, counterStr, dispStr;
-
-	int elapsTimeSec, counter = 0;
-
-	//private CameraController cameraController;
-	private Camera camera;
-	//private SceneNode dolphinN, stationN;
-	private SceneNode shipN, shipNBlue, stationN, terrainContN, enemyCraftN, dropShipN, rightHandN, 
-	flagPlatformdN, laserBoltN, SecondShipN, Object4N, Object3N, Object2N, Object1N, stationBlueN, Object2bN, BlueCockpitN,
-	asteroidM1, asteroidM2, asteroidM3, asteroidM4, asteroidM5, asteroidM6, asteroidM7, asteroidM8;
-	
-	private PhysicsObject shipPhysObj;
-	
-	private PatrolEnemy npc1;
-	private SceneNode patrolNPC;
-	
-	private SceneNode[] earthPlanets = new SceneNode[13];
-	
-	throttleUp controlTest;
-	throttleDown controlTest2;
-	throttleLeft controlTest3;
-	throttleRight controlTest4;
-	
-	ToggleLights toggleLights;
-	
-	private InputManager im;
-	private TextureManager tm;
-	private ThrottleController tc;
-	
-	private float planetHeight = 1f;
-	private float speedScale = 4;
-	private float yawDegrees = 80;
-	private float pitchDegrees = 80;
-	
-	private int shipLives = 3;
-	
-	private PatrolEnemy[] npcs;
-	*/
 	private boolean isOnline;
 	private String serverAddress;
 	private int serverPort;
@@ -150,7 +71,6 @@ public class MyGame extends VariableFrameRateGame {
 
 	private GameObject cockpitO, shipObj, satellite, blueShipO;
 
-	private GameObject tempShip;
 	private GameObject terrain;
 
 	private GameObject[] asteroids;
@@ -250,26 +170,23 @@ public class MyGame extends VariableFrameRateGame {
 	}
 
 	public void buildObjects(){
-
-		GameObject earth = new GameObject(GameObject.root(), earthS, earthT);
-		//0earth.setHeightMap(terrainHM);
-
+		//GameObject earth = new GameObject(GameObject.root(), earthS, earthT);
+		//earth.getRenderStates().isEnvironmentMapped(true);
+		
 		Matrix4f initialTranslation, initialRotation, initialScale;
-
+		
 		shipObj = new GameObject(GameObject.root(), cockpitBlueS, cockpitBlueT);
-		//shipObj = new GameObject(GameObject.root(), cockpitBlueS);
-		//shipObj = new GameObject(GameObject.root());
-		//shipObj = new GameObject(GameObject.root(), null, cockpitBlueT);
 
-		//tempShip = new GameObject(GameObject.root(), blueShipS, blueShipT);
-		//tempShip.setLocalLocation(tempShip.getLocalLocation().add(new Vector3f(10,0,0)));
+
+		GameObject tempShip = new GameObject(GameObject.root(), blueShipS, blueShipT);
+		tempShip.getRenderStates().hasLighting(true);
+		tempShip.getRenderStates().isEnvironmentMapped(true);
+		tempShip.setLocalLocation(tempShip.getLocalLocation().add(new Vector3f(10,0,0)));
 
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(1f);
-		//blueShipO.setLocalTranslation(initialTranslation);
 		shipObj.setLocalTranslation(initialTranslation);
 
-		//blueShipO.setLocalScale(initialScale);
 		shipObj.setLocalScale(initialScale);
 	}
 	
@@ -324,6 +241,7 @@ public class MyGame extends VariableFrameRateGame {
 		tempTransform = toDoubleArray(translation.get(vals));
 		shipPhysObj = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 1.0f);
 		shipObj.setPhysicsObject(shipPhysObj);
+		shipPhysObj  = shipObj.getPhysicsObject();
 	}
 
 	protected void setupInputs() throws IOException {
@@ -514,21 +432,6 @@ public class MyGame extends VariableFrameRateGame {
 	private void updateLights(){
 		headlight1.setLocation(shipObj.getWorldLocation());
 		headlight1.setDirection(shipObj.getWorldForwardVector().add(lightsOffset));
-		/*
-		Vector3f location = lightHolder.getWorldLocation();
-		Vector3f up = shipObj.getLocalUpVector();
-		//System.out.println(location + " " + shipObj.getLocalUpVector());
-		//print("" + shipObj.getWorldLocation().sub(lightHolder.getWorldLocation()));
-		headlight1.setLocation(location);
-		//headlight2.setLocation(location);
-		//headlight3.setLocation(location);
-		headlight1.setDirection(up);
-		headlight2.setDirection(up);
-		headlight3.setDirection(up);
-
-		print(shipObj.getWorldUpVector() + " " + headlight1.getDirection()[0] + "," + headlight1.getDirection()[1] + ","
-		 + headlight1.getDirection()[2]);
-		*/
 	}
 
 	private void setupTerrain(){
@@ -577,7 +480,6 @@ public class MyGame extends VariableFrameRateGame {
 		}
 	}
 
-	//TODO ghost avatar
 	public void setupGhostAvatar(GhostAvatar ghost, int team) throws IOException {
 		GameObject ghostN;
 		ghostN = new GameObject(GameObject.root(), blueShipS, blueShipT);
@@ -618,16 +520,6 @@ public class MyGame extends VariableFrameRateGame {
 		ghostN = sm.getRootSceneNode().createChildSceneNode(shipE.getName() + "Node");
 		ghostN.attachObject(shipE);
 		return ghostN;
-	}
-	*/
-
-	
-	
-	/*
-	//TODO update
-	public void update() {
-	//protected void update(Engine engine) {
-		npcUpdates();
 	}
 	*/
 
@@ -846,12 +738,13 @@ public class MyGame extends VariableFrameRateGame {
 		prevTime = System.currentTimeMillis();
 		deltaTime = (float)diffTime/1000;
 	}
-
+	
 	private void physicsUpdate(){
+		System.out.println("*****************************");
+		System.out.println("1");
+		printShipPhysicsObj();
 		Matrix4f mat = new Matrix4f();
 		Matrix4f mat2 = new Matrix4f().identity();
-		//TODO check for collision
-		//checkForCollisions();
 		physicsEngine.update((float)diffTime);
 		for (GameObject go:engine.getSceneGraph().getGameObjects())
 		{
@@ -862,6 +755,13 @@ public class MyGame extends VariableFrameRateGame {
 				go.setLocalTranslation(mat2);
 			}
 		}
+		System.out.println("2");
+		printShipPhysicsObj();
+	}
+
+	private void printShipPhysicsObj(){
+		float[] velocity = shipPhysObj.getLinearVelocity();
+		System.out.println(velocity[0] + " " + velocity[1] + " " + velocity[2]);
 	}
 
 	private float[] toFloatArray(double[] arr)
